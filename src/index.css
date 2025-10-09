@@ -40,10 +40,17 @@ All colors MUST be HSL.
 
     --gradient-primary: linear-gradient(135deg, hsl(180 80% 50% / 0.2), hsl(180 100% 40% / 0.1));
     --gradient-accent: linear-gradient(135deg, hsl(35 90% 60% / 0.2), hsl(35 100% 50% / 0.1));
-    --gradient-hero: linear-gradient(180deg, hsl(210 30% 8%), hsl(210 35% 12%));
+    --gradient-hero: radial-gradient(ellipse at top, hsl(180 80% 20% / 0.15), transparent 50%), 
+                     radial-gradient(ellipse at bottom right, hsl(35 90% 30% / 0.1), transparent 50%),
+                     linear-gradient(180deg, hsl(210 30% 8%), hsl(210 35% 10%));
+    --gradient-mesh: conic-gradient(from 0deg at 50% 50%, hsl(180 80% 50% / 0.1) 0deg, transparent 60deg, transparent 300deg, hsl(35 90% 60% / 0.1) 360deg);
     
     --glow-primary: 0 0 40px hsl(180 80% 50% / 0.3);
     --glow-accent: 0 0 40px hsl(35 90% 60% / 0.3);
+    --glow-strong: 0 0 60px hsl(180 80% 50% / 0.4), 0 0 100px hsl(180 80% 50% / 0.2);
+    
+    --glass-bg: hsl(210 30% 12% / 0.6);
+    --glass-border: hsl(210 20% 30% / 0.2);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -164,5 +171,34 @@ All colors MUST be HSL.
     50% { 
       box-shadow: 0 0 40px hsl(180 80% 50% / 0.6);
     }
+  }
+
+  .glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .animate-glow-pulse {
+    animation: glow-pulse-strong 3s ease-in-out infinite;
+  }
+
+  @keyframes glow-pulse-strong {
+    0%, 100% {
+      filter: drop-shadow(0 0 20px hsl(180 80% 50% / 0.4));
+    }
+    50% {
+      filter: drop-shadow(0 0 40px hsl(180 80% 50% / 0.8));
+    }
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 20s linear infinite;
+  }
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 }
