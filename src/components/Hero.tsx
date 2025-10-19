@@ -125,7 +125,7 @@ export const Hero = () => {
           </div>
 
           {/* Right Content - Profile Card */}
-          <div className="flex justify-center animate-slide-in-right">
+          <div className="flex flex-col items-center gap-4 animate-slide-in-right">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-accent/40 rounded-full blur-2xl animate-pulse-glow"></div>
               <div className="relative">
@@ -134,11 +134,11 @@ export const Hero = () => {
                   alt="Dhruva Mishra"
                   className="w-80 h-80 md:w-96 md:h-96 object-cover rounded-full border-4 border-primary/50"
                 />
-                <Badge className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-card/90 backdrop-blur-sm text-sm px-4 py-2 border border-primary/30">
-                  Full-Stack • ML • Competitive Programming
-                </Badge>
               </div>
             </div>
+            <Badge className="bg-card/90 backdrop-blur-sm text-sm px-4 py-2 border border-primary/30">
+              Full-Stack • ML • Competitive Programming
+            </Badge>
           </div>
         </div>
 
