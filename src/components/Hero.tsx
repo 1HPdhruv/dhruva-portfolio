@@ -44,7 +44,7 @@ export const Hero = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="grid md:grid-cols-2 gap-16 items-center md:items-start">
           {/* Left Content */}
           <div className="space-y-6 animate-fade-in">
             <div className="space-y-2">
