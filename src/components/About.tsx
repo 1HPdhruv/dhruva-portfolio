@@ -1,6 +1,6 @@
 import { GraduationCap } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { OrbitingSkills } from "@/components/OrbitingSkills";
 
 const education = [
   {
@@ -18,15 +18,6 @@ const education = [
     degree: "Matriculation",
     year: "2022",
   },
-];
-
-const skills = [
-  { name: "Java (Backend & APIs)", level: 90 },
-  { name: "React & Tailwind", level: 95 },
-  { name: "Node.js & Express", level: 85 },
-  { name: "Python (Data Analysis)", level: 88 },
-  { name: "Machine Learning", level: 82 },
-  { name: "DSA & Competitive Programming", level: 87 },
 ];
 
 export const About = () => {
@@ -86,20 +77,13 @@ export const About = () => {
           </div>
         </div>
 
-        {/* Skills */}
+        {/* Skills - Orbiting Tech Stack */}
         <div className="animate-fade-in">
-          <h3 className="text-2xl font-bold mb-8 text-center">Technical Skills</h3>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {skills.map((skill, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">{skill.name}</span>
-                  <span className="text-muted-foreground">{skill.level}%</span>
-                </div>
-                <Progress value={skill.level} className="h-2" />
-              </div>
-            ))}
-          </div>
+          <h3 className="text-2xl font-bold mb-4 text-center">Technical Skills</h3>
+          <p className="text-center text-muted-foreground mb-10 max-w-xl mx-auto">
+            Hover an icon to see proficiency. Tech orbits a central AI core.
+          </p>
+          <OrbitingSkills />
         </div>
       </div>
     </section>
