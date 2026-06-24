@@ -3,6 +3,8 @@ import { Github, Linkedin, Mail, Phone, Download, ChevronDown } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import profileHero from "@/assets/profile-dhruva.png";
+import { NeuralNetworkBg } from "./NeuralNetworkBg";
+import { Typewriter } from "./Typewriter";
 
 export const Hero = () => {
   const [count1, setCount1] = useState(0);
@@ -38,22 +40,27 @@ export const Hero = () => {
       className="min-h-screen flex items-center justify-center relative overflow-hidden gradient-hero"
     >
       {/* Animated Background */}
-      <div className="absolute inset-0 opacity-30">
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
         <div className="absolute top-20 left-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse-glow"></div>
         <div className="absolute bottom-20 right-20 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="grid md:grid-cols-2 gap-16 items-center md:items-start">
+      {/* Floating neural network + mouse-responsive glow */}
+      <div className="absolute inset-0 z-0">
+        <NeuralNetworkBg />
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10 pointer-events-none">
+        <div className="grid md:grid-cols-2 gap-16 items-center md:items-start [&_a,&_button,&_input]:pointer-events-auto">
           {/* Left Content */}
           <div className="space-y-6 animate-fade-in">
             <div className="space-y-2">
               <p className="text-primary font-medium">Hi, I'm</p>
-              <h1 className="text-5xl md:text-7xl font-bold leading-tight">
+              <h1 className="text-5xl md:text-7xl font-bold leading-tight text-gradient">
                 Dhruva Mishra
               </h1>
-              <h2 className="text-2xl md:text-3xl text-muted-foreground">
-                Full-Stack Developer & ML Enthusiast
+              <h2 className="text-2xl md:text-3xl text-muted-foreground min-h-[2.5rem]">
+                <Typewriter text="Building AI Systems That Solve Real Problems" />
               </h2>
             </div>
 
