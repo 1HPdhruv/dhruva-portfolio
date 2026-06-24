@@ -1,73 +1,125 @@
-# Welcome to your Lovable project
+# Dhruva Mishra – Portfolio
 
-## Project info
+This repository contains the source code for my personal portfolio website. It serves as a central place to showcase my projects, technical skills, achievements, research work, and experiences as a Computer Science student specializing in Artificial Intelligence and Machine Learning.
 
-**URL**: https://lovable.dev/projects/19c2cc7f-6804-4f31-b613-f6f04ee606ff
+Live Website: https://dhruva-portfolio.lovable.app
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## About Me
 
-**Use Lovable**
+I am a B.Tech student in Computer Science Engineering (AIML) at SRM Institute of Science and Technology. My interests lie at the intersection of Artificial Intelligence, Full Stack Development, Robotics, Computer Vision, and Data Science.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/19c2cc7f-6804-4f31-b613-f6f04ee606ff) and start prompting.
+I enjoy building technology that solves practical problems, whether through intelligent software systems, machine learning models, research projects, or hardware-based solutions.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## Technical Skills
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Programming Languages
+- Python
+- Java
+- C++
+- JavaScript
+- SQL
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
+### Frontend Development
 - React
-- shadcn-ui
+- HTML
+- CSS
 - Tailwind CSS
+- TypeScript
 
-## How can I deploy this project?
+### Backend Development
+- Node.js
+- Express.js
+- FastAPI
+- REST APIs
 
-Simply open [Lovable](https://lovable.dev/projects/19c2cc7f-6804-4f31-b613-f6f04ee606ff) and click on Share -> Publish.
+### Artificial Intelligence & Machine Learning
+- TensorFlow
+- PyTorch
+- Scikit-Learn
+- OpenCV
+- ONNX Runtime
+- Pandas
+- NumPy
 
-## Can I connect a custom domain to my Lovable project?
+### Databases
+- MySQL
+- MongoDB
+- SQLite
 
-Yes, you can!
+### Tools & Technologies
+- Git
+- GitHub
+- Docker
+- Linux
+- Streamlit
+- Vercel
+- Render
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Featured Projects
+
+### AgriSaarthi
+An AI-powered agricultural assistant designed to help farmers make informed decisions through crop recommendations, disease detection, weather insights, and market analysis.
+
+### EV Troubleshooter
+A machine learning-based system that identifies potential faults in electric vehicles and recommends suitable corrective actions.
+
+### SEV Guardian
+An AI-driven threat intelligence and security monitoring platform built for Security Operations Centers (SOC), providing real-time threat analysis and risk scoring.
+
+### AI-Based Depth Completion for AR/VR
+A research-focused project exploring depth reconstruction techniques to improve immersive experiences in augmented and virtual reality applications.
+
+---
+
+## Achievements
+
+- First Place in an Ideathon competition
+- First Prize in Creative Ingenuity (Engineering Graphics and Design)
+- Participated in more than 10 hackathons
+- Built multiple robotics and automation projects
+- Developed several web applications and AI solutions
+- NPTEL Certified in Fundamentals of Object-Oriented Programming
+
+---
+
+## Education
+
+### SRM Institute of Science and Technology
+Bachelor of Technology in Computer Science Engineering (Artificial Intelligence and Machine Learning)
+
+### St. Xavier's School, Bokaro
+Intermediate – 2024
+
+### St. Xavier's School, Bokaro
+Matriculation – 2022
+
+---
+
+## Website Features
+
+- Responsive design
+- Modern user interface
+- Interactive project showcase
+- Smooth animations and transitions
+- Mobile-friendly layout
+- Performance-optimized experience
+
+---
+
+## Contact
+
+GitHub: https://github.com/1HPdhruv
+
+LinkedIn: https://www.linkedin.com/in/1hpdhruv
+
+Email: your-email@example.com
+
+---
+
+Thank you for visiting my portfolio. Feedback, suggestions, and collaboration opportunities are always welcome.
