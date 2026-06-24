@@ -106,11 +106,10 @@ export const OrbitingSkills = () => {
                         : "opacity-0 -translate-y-1"
                     }`}
                   >
-                    <div className="flex justify-between text-xs font-medium mb-1.5">
-                      <span>{skill.name}</span>
-                      <span className="text-primary">{skill.level}%</span>
+                    <div className="text-xs font-medium text-center">
+                      {skill.name}
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted mt-2">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700 ease-out"
                         style={{ width: isHovered ? `${skill.level}%` : "0%" }}
