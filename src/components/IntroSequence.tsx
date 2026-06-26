@@ -627,132 +627,60 @@ function Stage4Network({ onDone }: { onDone: () => void }) {
   );
 }
 
-// ─── Word-level timestamps calibrated to Voice-1.mp3 (9.27s) ─────────────────
-const KARAOKE_WORDS: { word: string; t: number; lineBreak?: boolean }[] = [
-  { word: "Access",      t: 0.30 },
-  { word: "granted.",    t: 0.85, lineBreak: true },
-  { word: "Welcome,",    t: 1.65 },
-  { word: "Dhruv.",      t: 2.15, lineBreak: true },
-  { word: "All",         t: 3.45 },
-  { word: "systems",     t: 3.85 },
-  { word: "nominal.",    t: 4.30, lineBreak: true },
-  { word: "Neural",      t: 5.05 },
-  { word: "interfaces",  t: 5.60 },
-  { word: "loaded.",     t: 6.15, lineBreak: true },
-  { word: "DRAKE",       t: 6.90 },
-  { word: "online.",     t: 7.40, lineBreak: true },
-  { word: "Awaiting",    t: 7.95 },
-  { word: "your",        t: 8.25 },
-  { word: "command,",    t: 8.52 },
-  { word: "sir.",        t: 8.82 },
-];
-
-// ─── Stage 5: Launch Sequence ─────────────────────────────────────────────────
-function Stage5Launch({ onComplete }: { onComplete: () => void }) {
-  const [phase, setPhase] = useState<"scramble" | "resolve" | "access">("scramble");
-  const [displayText, setDisplayText] = useState("INITIALIZING…");
-  const [count, setCount] = useState(5);
-  const targetText = "WELCOME TO MY UNIVERSE";
-  const [fadeOut, setFadeOut] = useState(false);
+// ─── Stage 5: Rocket Launch Sequence ──────────────────────────────────────────
+function Stage5Launch({ onComplete, onPullUp }: { onComplete: () => void; onPullUp: () => void }) {
+  const [stage, setStage] = useState<"ignition" | "full_power" | "blastoff">("ignition");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pulledRef = useRef(false);
 
-  // activeIdx: the index of the word currently being "spoken" (-1 = none yet)
-  const [activeIdx, setActiveIdx] = useState(-1);
-
-  // ── Phase: Scramble ──
   useEffect(() => {
-    let frame = 0;
-    let raf: number;
-    const scramble = () => {
-      frame++;
-      const txt = targetText
-        .split("")
-        .map((c, i) =>
-          c === " " ? " " : frame > i * 2.5
-            ? c
-            : LAUNCH_CHARS[Math.floor(Math.random() * LAUNCH_CHARS.length)]
-        )
-        .join("");
-      setDisplayText(txt);
-      if (frame < targetText.length * 2.5 + 10) {
-        raf = requestAnimationFrame(scramble);
-      } else {
-        setPhase("resolve");
-      }
-    };
-    setTimeout(() => { raf = requestAnimationFrame(scramble); }, 200);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  // ── Phase: Resolve / Countdown ──
-  useEffect(() => {
-    if (phase !== "resolve") return;
-    setDisplayText(targetText);
-    playChord([523, 659, 784, 1047]);
-    let c = 5;
-    const tick = setInterval(() => {
-      playTone(440 + c * 40, "sine", 0.1, 0.08);
-      c--;
-      setCount(c);
-      if (c <= 0) {
-        clearInterval(tick);
-        setPhase("access");
-        playChord([880, 1047, 1319]);
-      }
-    }, 700);
-    return () => clearInterval(tick);
-  }, [phase]);
-
-  // ── Phase: Access — play audio + drive karaoke via timeupdate ──
-  useEffect(() => {
-    if (phase !== "access") return;
-
     const audio = new Audio("/audio/Voice-1.mp3");
     audio.volume = 1.0;
     audioRef.current = audio;
 
-    // timeupdate fires ~4× per second — find which word index is active
     const onTimeUpdate = () => {
       const t = audio.currentTime;
-      // Find the last word whose start time <= currentTime
-      let idx = -1;
-      for (let i = 0; i < KARAOKE_WORDS.length; i++) {
-        if (t >= KARAOKE_WORDS[i].t) idx = i;
-        else break;
+      if (t >= 3.0 && t < 7.8) {
+        setStage("full_power");
+      } else if (t >= 7.8) {
+        setStage("blastoff");
+        if (!pulledRef.current) {
+          pulledRef.current = true;
+          onPullUp();
+        }
       }
-      setActiveIdx(idx);
     };
 
     const onEnded = () => {
-      // Keep last word lit for 600ms then fade out
-      setActiveIdx(KARAOKE_WORDS.length - 1);
-      setTimeout(() => {
-        setFadeOut(true);
-        setTimeout(() => onComplete(), 900);
-      }, 800);
+      if (!pulledRef.current) {
+        pulledRef.current = true;
+        onPullUp();
+      }
+      setTimeout(() => onComplete(), 800);
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
     audio.play().catch(() => {
-      // Autoplay blocked — run a timer-based fallback
-      let i = 0;
-      const fallbackInterval = setInterval(() => {
-        if (i >= KARAOKE_WORDS.length) {
-          clearInterval(fallbackInterval);
-          setTimeout(() => { setFadeOut(true); setTimeout(() => onComplete(), 900); }, 800);
-          return;
+      // Autoplay fallback
+      setTimeout(() => setStage("full_power"), 2500);
+      setTimeout(() => {
+        setStage("blastoff");
+        if (!pulledRef.current) {
+          pulledRef.current = true;
+          onPullUp();
         }
-        setActiveIdx(i++);
-      }, 550);
-      return () => clearInterval(fallbackInterval);
+      }, 6000);
+      setTimeout(() => onComplete(), 7500);
     });
 
-    // Safety net: if audio never ends, still proceed after 12s
     const safety = setTimeout(() => {
-      setFadeOut(true);
-      setTimeout(() => onComplete(), 900);
-    }, 12000);
+      if (!pulledRef.current) {
+        pulledRef.current = true;
+        onPullUp();
+      }
+      setTimeout(() => onComplete(), 800);
+    }, 11000);
 
     return () => {
       clearTimeout(safety);
@@ -761,172 +689,98 @@ function Stage5Launch({ onComplete }: { onComplete: () => void }) {
       audio.pause();
       audio.currentTime = 0;
     };
-  }, [phase]);
-
-  // Group words into lines for rendering
-  const lines: { word: string; globalIdx: number }[][] = [];
-  let currentLine: { word: string; globalIdx: number }[] = [];
-  KARAOKE_WORDS.forEach((w, i) => {
-    currentLine.push({ word: w.word, globalIdx: i });
-    if (w.lineBreak) {
-      lines.push(currentLine);
-      currentLine = [];
-    }
-  });
-  if (currentLine.length) lines.push(currentLine);
+  }, [onComplete, onPullUp]);
 
   return (
-    <div
-      className={`flex flex-col items-center justify-center h-full gap-5 px-6 select-none transition-opacity duration-700 ${fadeOut ? "opacity-0" : "opacity-100"}`}
-    >
-      <div className="text-xs font-mono text-green-400 tracking-widest uppercase opacity-60">
-        — LEVEL 05 — LAUNCH SEQUENCE —
+    <div className={`flex flex-col items-center justify-center h-full w-full select-none ${stage === "blastoff" ? "animate-rocket-pull" : stage === "full_power" ? "animate-intense-shake" : "animate-base-shake"}`}>
+      {/* Background speed lines / Launchpad ambiance */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-500 via-transparent to-transparent animate-pulse" />
       </div>
 
-      {/* Spinning rings */}
-      <div className="relative w-52 h-52 flex items-center justify-center flex-shrink-0">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="absolute rounded-full border"
-            style={{
-              width: `${100 - i * 26}%`,
-              height: `${100 - i * 26}%`,
-              borderColor: [NEON_CYAN, NEON_PURPLE, NEON_BLUE][i],
-              opacity: 0.5 + i * 0.15,
-              animation: `spin-${["slow", "medium", "fast"][i]} ${[6, 4, 2.5][i]}s linear infinite ${i % 2 === 1 ? "reverse" : ""}`,
-              boxShadow: `0 0 20px ${[NEON_CYAN, NEON_PURPLE, NEON_BLUE][i]}40`,
-            }}
-          />
-        ))}
-        <div className="relative z-10 flex flex-col items-center text-center">
-          {phase === "resolve" && (
-            <div className="font-mono font-bold text-white text-4xl tabular-nums"
-              style={{ textShadow: `0 0 20px ${NEON_CYAN}` }}>
-              {count}
-            </div>
-          )}
-          {phase === "access" && (
-            <div className="font-mono font-bold text-green-400 text-base leading-tight"
-              style={{ textShadow: `0 0 30px ${NEON_GREEN}` }}>
-              ACCESS<br />GRANTED
-            </div>
-          )}
-          {phase === "scramble" && (
-            <div className="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/60 animate-pulse" />
-          )}
+      <div className="text-xs font-mono text-emerald-400 tracking-widest uppercase opacity-80 mb-6 z-10 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]">
+        — LEVEL 05 — DRAKE PROTOCOL LAUNCH —
+      </div>
+
+      {/* ── HIGH-TECH ROCKET ── */}
+      <div className="relative flex flex-col items-center z-10 transition-transform duration-1000">
+        {/* Rocket Body */}
+        <div className="relative w-28 h-56 flex flex-col items-center">
+          {/* Nose cone & fuselage */}
+          <svg viewBox="0 0 100 200" className="w-full h-full drop-shadow-[0_0_25px_rgba(6,182,212,0.6)]">
+            {/* Outer Wings/Fins */}
+            <path d="M20,120 L5,180 L25,170 Z" fill="#0284c7" />
+            <path d="M80,120 L95,180 L75,170 Z" fill="#0284c7" />
+            
+            {/* Main Fuselage */}
+            <path d="M50,10 Q20,60 20,170 L80,170 Q80,60 50,10 Z" fill="url(#rocketGrad)" stroke="#00ffcc" strokeWidth="2" />
+            
+            {/* Cockpit / AI Core */}
+            <circle cx="50" cy="80" r="14" fill="#0f172a" stroke="#00ffcc" strokeWidth="3" />
+            <circle cx="50" cy="80" r="8" fill="#10b981" className="animate-ping opacity-75" />
+            <circle cx="50" cy="80" r="6" fill="#00ffcc" />
+
+            {/* Body Accents */}
+            <line x1="50" y1="110" x2="50" y2="150" stroke="#0284c7" strokeWidth="3" strokeDasharray="5 5" />
+
+            <defs>
+              <linearGradient id="rocketGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#1e293b" />
+                <stop offset="50%" stopColor="#334155" />
+                <stop offset="100%" stopColor="#1e293b" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        {/* ── THRUSTER FLAMES ── */}
+        <div className="relative flex flex-col items-center w-24 -mt-2">
+          <div className={`w-16 rounded-b-full bg-gradient-to-b transition-all duration-300 blur-[1px] ${
+            stage === "blastoff"
+              ? "h-48 from-cyan-400 via-amber-300 to-amber-600 shadow-[0_0_60px_rgba(6,182,212,1)] animate-flame-intense"
+              : stage === "full_power"
+              ? "h-40 from-amber-300 via-orange-500 to-red-600 shadow-[0_0_50px_rgba(245,158,11,0.9)] animate-flame-intense"
+              : "h-20 from-cyan-400 via-blue-600 to-transparent shadow-[0_0_25px_rgba(6,182,212,0.6)] animate-flame-base"
+          }`} />
+          {/* Inner white-hot core */}
+          <div className={`absolute top-0 w-8 rounded-b-full bg-white transition-all duration-300 blur-sm ${
+            stage === "blastoff" ? "h-28 shadow-[0_0_30px_#ffffff]" : stage === "full_power" ? "h-20 shadow-[0_0_20px_#ffffff]" : "h-10"
+          }`} />
         </div>
       </div>
 
-      {/* Scramble / resolve text */}
-      {phase !== "access" && (
-        <div
-          className="font-mono font-bold text-center transition-all duration-300"
-          style={{
-            fontSize: "clamp(0.9rem, 2.5vw, 1.4rem)",
-            letterSpacing: "0.15em",
-            color: NEON_WHITE,
-            textShadow: `0 0 30px ${NEON_CYAN}`,
-          }}
-        >
-          {displayText}
-        </div>
-      )}
-
-      {/* ── KARAOKE CAPTION AREA ── */}
-      {phase === "access" && (
-        <div className="w-full max-w-lg px-2">
-          {/* Animated waveform */}
-          <div className="flex items-end justify-center gap-0.5 h-6 mb-4">
-            {Array.from({ length: 28 }).map((_, i) => (
-              <div
-                key={i}
-                className="w-1 rounded-full bg-green-400/60"
-                style={{
-                  height: activeIdx >= 0
-                    ? `${30 + Math.abs(Math.sin((i + activeIdx * 3) * 0.6)) * 70}%`
-                    : "15%",
-                  transition: "height 0.15s ease",
-                  boxShadow: activeIdx >= 0 ? "0 0 4px #10b981" : "none",
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Word-by-word karaoke lines */}
-          <div className="flex flex-col gap-2 items-center">
-            {lines.map((line, lineIdx) => {
-              const lineStart = line[0].globalIdx;
-              const lineEnd = line[line.length - 1].globalIdx;
-              const lineActive = activeIdx >= lineStart && activeIdx <= lineEnd;
-              const linePast = activeIdx > lineEnd;
-              return (
-                <div
-                  key={lineIdx}
-                  className="flex flex-wrap justify-center gap-x-2 gap-y-1 transition-all duration-300"
-                  style={{ opacity: lineActive || linePast ? 1 : 0.2 }}
-                >
-                  {line.map(({ word, globalIdx }) => {
-                    const isActive = activeIdx === globalIdx;
-                    const isPast = activeIdx > globalIdx;
-                    return (
-                      <span
-                        key={globalIdx}
-                        className="font-mono font-bold transition-all duration-150 inline-block"
-                        style={{
-                          fontSize: isActive ? "1.15rem" : "1rem",
-                          color: isActive ? "#00ffcc" : isPast ? "#10b981" : "#4b5563",
-                          textShadow: isActive
-                            ? "0 0 18px #00ffcc, 0 0 40px #00ffcc88"
-                            : isPast
-                            ? "0 0 8px #10b981"
-                            : "none",
-                          transform: isActive ? "scale(1.12) translateY(-1px)" : "scale(1)",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        {word}
-                      </span>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-5 h-px w-full bg-green-900/40 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-green-500 to-cyan-400 rounded-full transition-all duration-300"
-              style={{
-                width: activeIdx < 0 ? "0%" : `${((activeIdx + 1) / KARAOKE_WORDS.length) * 100}%`,
-                boxShadow: "0 0 8px #10b981",
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Countdown dots */}
-      {phase === "resolve" && (
-        <div className="flex gap-2">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="w-8 h-2 rounded-full transition-all duration-300"
-              style={{
-                background: i >= count ? NEON_GREEN : NEON_PURPLE,
-                boxShadow: i >= count ? `0 0 8px ${NEON_GREEN}` : "none",
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {/* Launch Status Text */}
+      <div className="mt-12 font-mono font-bold text-center z-10 tracking-widest text-lg text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]">
+        {stage === "blastoff" ? "🚀 BLASTOFF — ENTERING ORBIT" : stage === "full_power" ? "⚡ ALL SYSTEMS NOMINAL" : "🔑 ACCESS GRANTED"}
+      </div>
 
       <style>{`
-        @keyframes spin-slow   { to { transform: rotate(360deg); } }
-        @keyframes spin-medium { to { transform: rotate(360deg); } }
-        @keyframes spin-fast   { to { transform: rotate(360deg); } }
+        @keyframes base-shake {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          25% { transform: translate(-1px, 1px) rotate(-0.5deg); }
+          50% { transform: translate(1px, -1px) rotate(0.5deg); }
+          75% { transform: translate(-1px, -1px) rotate(0deg); }
+        }
+        @keyframes intense-shake {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          20% { transform: translate(-3px, 3px) rotate(-1deg); }
+          40% { transform: translate(3px, -3px) rotate(1deg); }
+          60% { transform: translate(-3px, -3px) rotate(-1deg); }
+          80% { transform: translate(3px, 3px) rotate(1deg); }
+        }
+        @keyframes flame-base {
+          0%, 100% { transform: scaleY(1); opacity: 0.9; }
+          50% { transform: scaleY(1.15); opacity: 1; }
+        }
+        @keyframes flame-intense {
+          0%, 100% { transform: scaleY(1) scaleX(1); opacity: 0.9; }
+          33% { transform: scaleY(1.25) scaleX(1.05); opacity: 1; }
+          66% { transform: scaleY(0.95) scaleX(1.1); opacity: 1; }
+        }
+        .animate-base-shake { animation: base-shake 0.15s ease-in-out infinite; }
+        .animate-intense-shake { animation: intense-shake 0.08s ease-in-out infinite; }
+        .animate-flame-base { animation: flame-base 0.2s ease-in-out infinite; }
+        .animate-flame-intense { animation: flame-intense 0.1s ease-in-out infinite; }
       `}</style>
     </div>
   );
@@ -985,6 +839,7 @@ export function IntroSequence({ onComplete }: IntroSequenceProps) {
   const [step, setStep] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [pullingUp, setPullingUp] = useState(false);
 
   const next = useCallback(() => {
     if (transitioning) return;
@@ -994,6 +849,10 @@ export function IntroSequence({ onComplete }: IntroSequenceProps) {
       setTransitioning(false);
     }, 350);
   }, [transitioning]);
+
+  const handlePullUp = useCallback(() => {
+    setPullingUp(true);
+  }, []);
 
   const finish = useCallback(() => {
     setTransitioning(true);
@@ -1010,7 +869,8 @@ export function IntroSequence({ onComplete }: IntroSequenceProps) {
       className="fixed inset-0 z-50 overflow-hidden"
       style={{
         background: "radial-gradient(ellipse at center, #0a0a1a 0%, #050510 100%)",
-        transition: "opacity 0.7s ease",
+        transition: "transform 1.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease",
+        transform: pullingUp ? "translateY(-100vh)" : "translateY(0)",
         opacity: visible ? 1 : 0,
       }}
     >
@@ -1032,7 +892,7 @@ export function IntroSequence({ onComplete }: IntroSequenceProps) {
         {step === 1 && <Stage2Avoid onDone={next} />}
         {step === 2 && <Stage3Collect onDone={next} />}
         {step === 3 && <Stage4Network onDone={next} />}
-        {step === 4 && <Stage5Launch onComplete={finish} />}
+        {step === 4 && <Stage5Launch onComplete={finish} onPullUp={handlePullUp} />}
       </div>
 
       {/* Corner decorations */}
