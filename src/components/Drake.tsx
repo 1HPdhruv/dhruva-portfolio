@@ -794,34 +794,4 @@ export function Drake() {
       `}</style>
     </>
   );
-}           />
-            <button
-              onClick={() => send(input)}
-              disabled={!input.trim() || thinking}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer
-                disabled:opacity-30 disabled:cursor-not-allowed
-                bg-gradient-to-br from-cyan-500 to-purple-600
-                hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] active:scale-90"
-            >
-              <Send className="w-3.5 h-3.5 text-white" />
-            </button>
-          </div>
-          <div className="text-[9px] text-center text-slate-600 mt-1.5 font-mono">
-            DRAKE · Powered by Dhruva's knowledge base
-          </div>
-        </div>
-      </div>
-
-      {/* ── Keyframes ── */}
-      <style>{`
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.3s ease-out forwards;
-        }
-      `}</style>
-    </>
-  );
 }
