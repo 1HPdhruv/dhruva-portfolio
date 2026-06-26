@@ -224,56 +224,59 @@ function Stage1Init({ onDone }: { onDone: () => void }) {
   );
 }
 
-// ─── Stage 2: Avoid Obstacles ────────────────────────────────────────────────
-function Stage2Avoid({ onDone }: { onDone: () => void }) {
+// ─── Stage 2 Inner Canvas ─────────────────────────────────────────────────────
+// Extracted so that changing `restartKey` fully remounts the component and
+// re-runs useEffect — this is the correct way to restart a canvas game loop.
+function Stage2Canvas({
+  onDone,
+  onDead,
+}: {
+  onDone: () => void;
+  onDead: () => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef({
-    ship: { x: 80, y: 50 },
+    ship: { x: 15, y: 50 },
     obstacles: [] as Obstacle[],
     score: 0,
     alive: true,
-    phase: 0, // 0=playing, 1=cleared
+    phase: 0,
     nextId: 0,
     frame: 0,
   });
   const [score, setScore] = useState(0);
-  const [status, setStatus] = useState<"playing" | "dead" | "cleared">("playing");
+  const rafRef = useRef<number>(0);
   const keysRef = useRef<Set<string>>(new Set());
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
-  const rafRef = useRef<number>(0);
-
   const TARGET_SCORE = 20;
-
-  const spawnObstacle = useCallback(() => {
-    const s = stateRef.current;
-    const h = 4 + Math.random() * 18;
-    s.obstacles.push({
-      id: s.nextId++,
-      x: 105,
-      y: Math.random() * (90 - h),
-      w: 3 + Math.random() * 4,
-      h,
-      speed: 0.5 + Math.random() * 0.8 + s.score * 0.018,
-    });
-  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     const W = canvas.width;
     const H = canvas.height;
-
     const toX = (p: number) => (p / 100) * W;
     const toY = (p: number) => (p / 100) * H;
-
     let spawnTimer = 0;
+
+    const spawnObstacle = () => {
+      const s = stateRef.current;
+      const h = 4 + Math.random() * 18;
+      s.obstacles.push({
+        id: s.nextId++,
+        x: 105,
+        y: Math.random() * (90 - h),
+        w: 3 + Math.random() * 4,
+        h,
+        speed: 0.5 + Math.random() * 0.8 + s.score * 0.018,
+      });
+    };
 
     function loop() {
       const s = stateRef.current;
       if (!s.alive || s.phase === 1) return;
       s.frame++;
 
-      // ── Move ship ──
       const spd = 1.2;
       if (keysRef.current.has("ArrowUp") || keysRef.current.has("w")) s.ship.y = Math.max(2, s.ship.y - spd);
       if (keysRef.current.has("ArrowDown") || keysRef.current.has("s")) s.ship.y = Math.min(94, s.ship.y + spd);
@@ -286,16 +289,13 @@ function Stage2Avoid({ onDone }: { onDone: () => void }) {
         s.ship.y += (ty - s.ship.y) * 0.1;
       }
 
-      // ── Spawn ──
       spawnTimer++;
       const interval = Math.max(18, 40 - s.score * 0.8);
       if (spawnTimer > interval) { spawnObstacle(); spawnTimer = 0; }
 
-      // ── Move obstacles ──
       s.obstacles = s.obstacles.filter((o) => o.x + o.w > -5);
       s.obstacles.forEach((o) => { o.x -= o.speed; });
 
-      // ── Score ──
       s.obstacles.forEach((o) => {
         if (o.x + o.w < s.ship.x - 2 && !(o as any).scored) {
           (o as any).scored = true;
@@ -305,7 +305,6 @@ function Stage2Avoid({ onDone }: { onDone: () => void }) {
         }
       });
 
-      // ── Collision ──
       const sw = 3, sh = 3;
       for (const o of s.obstacles) {
         if (
@@ -314,30 +313,24 @@ function Stage2Avoid({ onDone }: { onDone: () => void }) {
         ) {
           s.alive = false;
           playTone(200, "sawtooth", 0.3, 0.12);
-          setStatus("dead");
+          onDead();
           return;
         }
       }
 
-      // ── Cleared? ──
       if (s.score >= TARGET_SCORE) {
         s.phase = 1;
-        setStatus("cleared");
         playChord([523, 659, 784]);
         setTimeout(() => onDone(), 900);
         return;
       }
 
-      // ── Draw ──
       ctx.clearRect(0, 0, W, H);
-
-      // Grid bg
       ctx.strokeStyle = "rgba(6,182,212,0.06)";
       ctx.lineWidth = 0.5;
       for (let gx = 0; gx < W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
       for (let gy = 0; gy < H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
 
-      // Obstacles
       s.obstacles.forEach((o) => {
         const x = toX(o.x), y = toY(o.y), w = toX(o.w), h = toY(o.h);
         ctx.save();
@@ -350,7 +343,6 @@ function Stage2Avoid({ onDone }: { onDone: () => void }) {
         ctx.restore();
       });
 
-      // Ship
       const sx = toX(s.ship.x), sy = toY(s.ship.y);
       ctx.save();
       ctx.shadowColor = NEON_CYAN;
@@ -362,7 +354,6 @@ function Stage2Avoid({ onDone }: { onDone: () => void }) {
       ctx.lineTo(sx, sy + 10);
       ctx.closePath();
       ctx.fill();
-      // Thruster
       ctx.fillStyle = "rgba(168,85,247,0.8)";
       ctx.beginPath();
       ctx.moveTo(sx, sy + 3);
@@ -371,6 +362,11 @@ function Stage2Avoid({ onDone }: { onDone: () => void }) {
       ctx.closePath();
       ctx.fill();
       ctx.restore();
+
+      // Score HUD on canvas
+      ctx.fillStyle = "rgba(6,182,212,0.7)";
+      ctx.font = "bold 12px monospace";
+      ctx.fillText(`SCORE: ${s.score} / ${TARGET_SCORE}`, 10, 20);
 
       rafRef.current = requestAnimationFrame(loop);
     }
@@ -398,12 +394,32 @@ function Stage2Avoid({ onDone }: { onDone: () => void }) {
     };
   }, []);
 
+  return (
+    <canvas
+      ref={canvasRef}
+      width={560}
+      height={300}
+      className="rounded-lg border border-cyan-500/30 bg-black/70 backdrop-blur shadow-[0_0_60px_rgba(6,182,212,0.12)]"
+    />
+  );
+}
+
+// ─── Stage 2: Avoid Obstacles ────────────────────────────────────────────────
+function Stage2Avoid({ onDone }: { onDone: () => void }) {
+  const [restartKey, setRestartKey] = useState(0);
+  const [status, setStatus] = useState<"playing" | "dead" | "cleared">("playing");
+
+  const TARGET_SCORE = 20;
+
+  const handleDead = useCallback(() => setStatus("dead"), []);
+  const handleDone = useCallback(() => {
+    setStatus("cleared");
+    onDone();
+  }, [onDone]);
+
   const restart = () => {
-    stateRef.current = { ship: { x: 15, y: 50 }, obstacles: [], score: 0, alive: true, phase: 0, nextId: 0, frame: 0 };
-    setScore(0);
     setStatus("playing");
-    rafRef.current = requestAnimationFrame(function loop() {
-      /* will restart naturally */ });
+    setRestartKey((k) => k + 1); // remounts Stage2Canvas → re-runs useEffect
   };
 
   return (
@@ -412,26 +428,22 @@ function Stage2Avoid({ onDone }: { onDone: () => void }) {
         — LEVEL 02 — NAVIGATE THE VOID —
       </div>
       <div className="flex items-center gap-6 mb-1">
-        <span className="font-mono text-cyan-300 text-sm">SCORE: <span className="text-white font-bold">{score}</span></span>
         <span className="font-mono text-cyan-300 text-sm">TARGET: <span className="text-yellow-400 font-bold">{TARGET_SCORE}</span></span>
         <span className="font-mono text-purple-300 text-sm">[ ARROW KEYS / MOUSE ]</span>
       </div>
       <div className="relative">
-        <canvas
-          ref={canvasRef}
-          width={560}
-          height={300}
-          className="rounded-lg border border-cyan-500/30 bg-black/70 backdrop-blur shadow-[0_0_60px_rgba(6,182,212,0.12)]"
-        />
+        {status !== "dead" && (
+          <Stage2Canvas key={restartKey} onDone={handleDone} onDead={handleDead} />
+        )}
         {status === "dead" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg backdrop-blur-sm">
-            <div className="text-red-400 font-mono font-bold text-2xl mb-2 animate-pulse">SYSTEM CRASH</div>
-            <div className="text-red-300/60 font-mono text-sm mb-4">Neural link severed. Reconnecting…</div>
+          <div className="w-[560px] h-[300px] rounded-lg border border-red-500/30 bg-black/70 flex flex-col items-center justify-center gap-4">
+            <div className="text-red-400 font-mono font-bold text-2xl animate-pulse">SYSTEM CRASH</div>
+            <div className="text-red-300/60 font-mono text-sm">Neural link severed. Reconnecting…</div>
             <button
-              onClick={() => { stateRef.current = { ship: { x: 15, y: 50 }, obstacles: [], score: 0, alive: true, phase: 0, nextId: 0, frame: 0 }; setScore(0); setStatus("playing"); }}
-              className="px-6 py-2 border border-cyan-500 text-cyan-400 font-mono text-sm rounded hover:bg-cyan-500/10 transition-colors"
+              onClick={restart}
+              className="px-6 py-2 border border-cyan-500 text-cyan-400 font-mono text-sm rounded hover:bg-cyan-500/10 transition-colors cursor-pointer"
             >
-              RESTART SEQUENCE
+              ▶ RESTART SEQUENCE
             </button>
           </div>
         )}
@@ -566,7 +578,11 @@ function Stage4Network({ onDone }: { onDone: () => void }) {
         NODES ACTIVE: <span className="text-white font-bold">{nodes.filter((n) => n.active).length}</span> / {nodes.length}
       </div>
       <div className="relative w-full max-w-md h-72 bg-black/60 border border-blue-500/30 rounded-xl backdrop-blur shadow-[0_0_60px_rgba(59,130,246,0.12)]">
-        <svg className="absolute inset-0 w-full h-full">
+        {/* SVG layer for edges — rendered below nodes */}
+        <svg className="absolute inset-0 w-full h-full" style={{ overflow: "visible" }}>
+          <defs>
+            <style>{`@keyframes dash-anim { to { stroke-dashoffset: -16; } }`}</style>
+          </defs>
           {edges.map((e, i) => {
             const a = nodes[e.a], b = nodes[e.b];
             return (
@@ -576,35 +592,43 @@ function Stage4Network({ onDone }: { onDone: () => void }) {
                 x2={`${b.x}%`} y2={`${b.y}%`}
                 stroke={NEON_BLUE}
                 strokeWidth="1.5"
-                opacity="0.5"
+                opacity="0.6"
                 strokeDasharray="4 4"
                 style={{ animation: "dash-anim 1.2s linear infinite" }}
               />
             );
           })}
         </svg>
+
+        {/* Nodes — use marginLeft/marginTop for centering so left/top are not overridden */}
         {nodes.map((n) => (
           <div
             key={n.id}
-            className={`absolute flex flex-col items-center transition-all duration-500 ${n.active ? "opacity-100 scale-100" : "opacity-0 scale-50"}`}
-            style={{ left: `${n.x}%`, top: `${n.y}%`, transform: `translate(-50%, -50%)` }}
+            className={`absolute flex flex-col items-center transition-all duration-500 ${
+              n.active ? "opacity-100 scale-100" : "opacity-0 scale-50"
+            }`}
+            style={{
+              left: `${n.x}%`,
+              top: `${n.y}%`,
+              marginLeft: "-20px",   /* half of w-10 (40px) */
+              marginTop: "-20px",    /* half of h-10 (40px) */
+            }}
           >
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center border-2 font-mono text-xs font-bold ${
-                n.active ? "border-blue-400 bg-blue-900/60 text-blue-300 shadow-[0_0_20px_rgba(59,130,246,0.6)]" : "border-gray-700 bg-gray-900 text-gray-600"
+              className={`relative w-10 h-10 rounded-full flex items-center justify-center border-2 font-mono text-xs font-bold ${
+                n.active
+                  ? "border-blue-400 bg-blue-900/60 text-blue-300 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
+                  : "border-gray-700 bg-gray-900 text-gray-600"
               }`}
             >
               {n.label}
+              {n.active && (
+                <div className="absolute inset-0 rounded-full border border-blue-400 animate-ping opacity-30" />
+              )}
             </div>
-            {n.active && (
-              <div className="absolute inset-0 rounded-full border border-blue-400 animate-ping opacity-30" />
-            )}
           </div>
         ))}
       </div>
-      <style>{`
-        @keyframes dash-anim { to { stroke-dashoffset: -16; } }
-      `}</style>
     </div>
   );
 }
