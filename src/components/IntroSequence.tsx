@@ -589,61 +589,41 @@ function Stage4Network({ onDone }: { onDone: () => void }) {
               <line
                 key={i}
                 x1={`${a.x}%`} y1={`${a.y}%`}
-                x2={`${b.x}%`} y2={`${b.y}%`}
-                stroke={NEON_BLUE}
-                strokeWidth="1.5"
-                opacity="0.6"
-                strokeDasharray="4 4"
-                style={{ animation: "dash-anim 1.2s linear infinite" }}
-              />
-            );
-          })}
-        </svg>
-
-        {/* Nodes — use marginLeft/marginTop for centering so left/top are not overridden */}
-        {nodes.map((n) => (
-          <div
-            key={n.id}
-            className={`absolute flex flex-col items-center transition-all duration-500 ${
-              n.active ? "opacity-100 scale-100" : "opacity-0 scale-50"
-            }`}
-            style={{
-              left: `${n.x}%`,
-              top: `${n.y}%`,
-              marginLeft: "-20px",
-              marginTop: "-20px",
-            }}
-          >
-            <div
-              className={`relative w-10 h-10 rounded-full flex items-center justify-center border-2 font-mono text-xs font-bold ${
-                n.active
-                  ? "border-blue-400 bg-blue-900/60 text-blue-300 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
-                  : "border-gray-700 bg-gray-900 text-gray-600"
-              }`}
-            >
-              {n.label}
-              {n.active && (
-                <div className="absolute inset-0 rounded-full border border-blue-400 animate-ping opacity-30" />
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// ─── Word-level timestamps calibrated to Voice-1.mp3 (9.27s) ─────────────────
+// Each entry: { word, t } where t = audioCurrentTime (seconds) when word starts
+const KARAOKE_WORDS: { word: string; t: number; lineBreak?: boolean }[] = [
+  { word: "Access",     t: 0.30 },
+  { word: "granted.",   t: 0.85, lineBreak: true },
+  { word: "Welcome,",   t: 1.65 },
+  { word: "Dhruva",     t: 2.15 },
+  { word: "Mishra.",    t: 2.65, lineBreak: true },
+  { word: "All",        t: 3.45 },
+  { word: "systems",    t: 3.85 },
+  { word: "nominal.",   t: 4.30, lineBreak: true },
+  { word: "Neural",     t: 5.05 },
+  { word: "interfaces", t: 5.60 },
+  { word: "loaded.",    t: 6.15, lineBreak: true },
+  { word: "DRAKE",      t: 6.90 },
+  { word: "online.",    t: 7.40, lineBreak: true },
+  { word: "Awaiting",   t: 7.95 },
+  { word: "your",       t: 8.25 },
+  { word: "command,",   t: 8.52 },
+  { word: "sir.",       t: 8.82 },
+];
 
 // ─── Stage 5: Launch Sequence ─────────────────────────────────────────────────
 function Stage5Launch({ onComplete }: { onComplete: () => void }) {
-  const [phase, setPhase] = useState<"scramble" | "resolve" | "access" | "done">("scramble");
+  const [phase, setPhase] = useState<"scramble" | "resolve" | "access">("scramble");
   const [displayText, setDisplayText] = useState("INITIALIZING…");
   const [count, setCount] = useState(5);
   const targetText = "WELCOME TO MY UNIVERSE";
-  const resolvedRef = useRef(false);
   const [fadeOut, setFadeOut] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Scramble phase
+  // activeIdx: the index of the word currently being "spoken" (-1 = none yet)
+  const [activeIdx, setActiveIdx] = useState(-1);
+
+  // ── Phase: Scramble ──
   useEffect(() => {
     let frame = 0;
     let raf: number;
@@ -668,7 +648,7 @@ function Stage5Launch({ onComplete }: { onComplete: () => void }) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Countdown
+  // ── Phase: Resolve / Countdown ──
   useEffect(() => {
     if (phase !== "resolve") return;
     setDisplayText(targetText);
@@ -687,50 +667,88 @@ function Stage5Launch({ onComplete }: { onComplete: () => void }) {
     return () => clearInterval(tick);
   }, [phase]);
 
-  // Access Granted — play DRAKE voice then transition
+  // ── Phase: Access — play audio + drive karaoke via timeupdate ──
   useEffect(() => {
     if (phase !== "access") return;
 
-    // Play the DRAKE voice audio
     const audio = new Audio("/audio/Voice-1.mp3");
     audio.volume = 1.0;
     audioRef.current = audio;
 
-    audio.play().catch(() => {}); // silently ignore if browser blocks autoplay
+    // timeupdate fires ~4× per second — find which word index is active
+    const onTimeUpdate = () => {
+      const t = audio.currentTime;
+      // Find the last word whose start time <= currentTime
+      let idx = -1;
+      for (let i = 0; i < KARAOKE_WORDS.length; i++) {
+        if (t >= KARAOKE_WORDS[i].t) idx = i;
+        else break;
+      }
+      setActiveIdx(idx);
+    };
 
-    // When voice ends naturally, start fade-out
     const onEnded = () => {
+      // Keep last word lit for 600ms then fade out
+      setActiveIdx(KARAOKE_WORDS.length - 1);
       setTimeout(() => {
         setFadeOut(true);
-        setTimeout(() => { onComplete(); }, 900);
-      }, 600);
+        setTimeout(() => onComplete(), 900);
+      }, 800);
     };
-    audio.addEventListener("ended", onEnded);
 
-    // Fallback: if audio can't load/play, still proceed after 7s
-    const fallbackTimer = setTimeout(() => {
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("ended", onEnded);
+    audio.play().catch(() => {
+      // Autoplay blocked — run a timer-based fallback
+      let i = 0;
+      const fallbackInterval = setInterval(() => {
+        if (i >= KARAOKE_WORDS.length) {
+          clearInterval(fallbackInterval);
+          setTimeout(() => { setFadeOut(true); setTimeout(() => onComplete(), 900); }, 800);
+          return;
+        }
+        setActiveIdx(i++);
+      }, 550);
+      return () => clearInterval(fallbackInterval);
+    });
+
+    // Safety net: if audio never ends, still proceed after 12s
+    const safety = setTimeout(() => {
       setFadeOut(true);
-      setTimeout(() => { onComplete(); }, 900);
-    }, 7000);
+      setTimeout(() => onComplete(), 900);
+    }, 12000);
 
     return () => {
-      clearTimeout(fallbackTimer);
+      clearTimeout(safety);
+      audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
       audio.pause();
       audio.currentTime = 0;
     };
   }, [phase]);
 
+  // Group words into lines for rendering
+  const lines: { word: string; globalIdx: number }[][] = [];
+  let currentLine: { word: string; globalIdx: number }[] = [];
+  KARAOKE_WORDS.forEach((w, i) => {
+    currentLine.push({ word: w.word, globalIdx: i });
+    if (w.lineBreak) {
+      lines.push(currentLine);
+      currentLine = [];
+    }
+  });
+  if (currentLine.length) lines.push(currentLine);
+
   return (
     <div
-      className={`flex flex-col items-center justify-center h-full gap-6 px-6 select-none transition-opacity duration-700 ${fadeOut ? "opacity-0" : "opacity-100"}`}
+      className={`flex flex-col items-center justify-center h-full gap-5 px-6 select-none transition-opacity duration-700 ${fadeOut ? "opacity-0" : "opacity-100"}`}
     >
       <div className="text-xs font-mono text-green-400 tracking-widest uppercase opacity-60">
         — LEVEL 05 — LAUNCH SEQUENCE —
       </div>
 
-      {/* Ring Animations */}
-      <div className="relative w-64 h-64 flex items-center justify-center">
+      {/* Spinning rings */}
+      <div className="relative w-52 h-52 flex items-center justify-center flex-shrink-0">
         {[0, 1, 2].map((i) => (
           <div
             key={i}
@@ -745,49 +763,42 @@ function Stage5Launch({ onComplete }: { onComplete: () => void }) {
             }}
           />
         ))}
-        <div className="relative z-10 flex flex-col items-center">
+        <div className="relative z-10 flex flex-col items-center text-center">
           {phase === "resolve" && (
-            <div className="font-mono font-bold text-white text-4xl mb-1 tabular-nums"
+            <div className="font-mono font-bold text-white text-4xl tabular-nums"
               style={{ textShadow: `0 0 20px ${NEON_CYAN}` }}>
               {count}
             </div>
           )}
           {phase === "access" && (
-            <div className="font-mono font-bold text-green-400 text-lg text-center"
+            <div className="font-mono font-bold text-green-400 text-base leading-tight"
               style={{ textShadow: `0 0 30px ${NEON_GREEN}` }}>
               ACCESS<br />GRANTED
             </div>
           )}
-          {(phase === "scramble") && (
-            <div className="w-12 h-12 rounded-full bg-cyan-500/20 border border-cyan-500/60 animate-pulse" />
+          {phase === "scramble" && (
+            <div className="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/60 animate-pulse" />
           )}
         </div>
       </div>
 
-      <div
-        className="font-mono font-bold text-center transition-all duration-300"
-        style={{
-          fontSize: "clamp(1rem, 3vw, 1.6rem)",
-          letterSpacing: "0.15em",
-          color: phase === "access" ? NEON_GREEN : NEON_WHITE,
-          textShadow: `0 0 30px ${phase === "access" ? NEON_GREEN : NEON_CYAN}`,
-        }}
-      >
-        {displayText}
-      </div>
+      {/* Scramble / resolve text */}
+      {phase !== "access" && (
+        <div
+          className="font-mono font-bold text-center transition-all duration-300"
+          style={{
+            fontSize: "clamp(0.9rem, 2.5vw, 1.4rem)",
+            letterSpacing: "0.15em",
+            color: NEON_WHITE,
+            textShadow: `0 0 30px ${NEON_CYAN}`,
+          }}
+        >
+          {displayText}
+        </div>
+      )}
 
-      {/* DRAKE speech lines that appear in sync with voice */}
+      {/* ── KARAOKE CAPTION AREA ── */}
       {phase === "access" && (
-        <div className="flex flex-col items-center gap-1 font-mono text-sm text-green-300/80">
-          {[
-            { text: "Access granted.", delay: 0 },
-            { text: "Welcome, Dhruva Mishra.", delay: 0.8 },
-            { text: "All systems nominal.", delay: 1.7 },
-            { text: "Neural interfaces loaded.", delay: 2.6 },
-            { text: "DRAKE online.", delay: 3.5 },
-            { text: "Awaiting your command, sir.", delay: 4.3 },
-          ].map((line, i) => (
-            <div
               key={i}
               className="opacity-0 flex items-center gap-2"
               style={{
