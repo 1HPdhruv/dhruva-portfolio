@@ -610,8 +610,8 @@ function Stage4Network({ onDone }: { onDone: () => void }) {
             style={{
               left: `${n.x}%`,
               top: `${n.y}%`,
-              marginLeft: "-20px",   /* half of w-10 (40px) */
-              marginTop: "-20px",    /* half of h-10 (40px) */
+              marginLeft: "-20px",
+              marginTop: "-20px",
             }}
           >
             <div
@@ -641,6 +641,7 @@ function Stage5Launch({ onComplete }: { onComplete: () => void }) {
   const targetText = "WELCOME TO MY UNIVERSE";
   const resolvedRef = useRef(false);
   const [fadeOut, setFadeOut] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Scramble phase
   useEffect(() => {
@@ -686,12 +687,38 @@ function Stage5Launch({ onComplete }: { onComplete: () => void }) {
     return () => clearInterval(tick);
   }, [phase]);
 
+  // Access Granted — play DRAKE voice then transition
   useEffect(() => {
     if (phase !== "access") return;
-    setTimeout(() => {
+
+    // Play the DRAKE voice audio
+    const audio = new Audio("/audio/Voice-1.mp3");
+    audio.volume = 1.0;
+    audioRef.current = audio;
+
+    audio.play().catch(() => {}); // silently ignore if browser blocks autoplay
+
+    // When voice ends naturally, start fade-out
+    const onEnded = () => {
+      setTimeout(() => {
+        setFadeOut(true);
+        setTimeout(() => { onComplete(); }, 900);
+      }, 600);
+    };
+    audio.addEventListener("ended", onEnded);
+
+    // Fallback: if audio can't load/play, still proceed after 7s
+    const fallbackTimer = setTimeout(() => {
       setFadeOut(true);
       setTimeout(() => { onComplete(); }, 900);
-    }, 1600);
+    }, 7000);
+
+    return () => {
+      clearTimeout(fallbackTimer);
+      audio.removeEventListener("ended", onEnded);
+      audio.pause();
+      audio.currentTime = 0;
+    };
   }, [phase]);
 
   return (
@@ -748,6 +775,32 @@ function Stage5Launch({ onComplete }: { onComplete: () => void }) {
       >
         {displayText}
       </div>
+
+      {/* DRAKE speech lines that appear in sync with voice */}
+      {phase === "access" && (
+        <div className="flex flex-col items-center gap-1 font-mono text-sm text-green-300/80">
+          {[
+            { text: "Access granted.", delay: 0 },
+            { text: "Welcome, Dhruva Mishra.", delay: 0.8 },
+            { text: "All systems nominal.", delay: 1.7 },
+            { text: "Neural interfaces loaded.", delay: 2.6 },
+            { text: "DRAKE online.", delay: 3.5 },
+            { text: "Awaiting your command, sir.", delay: 4.3 },
+          ].map((line, i) => (
+            <div
+              key={i}
+              className="opacity-0 flex items-center gap-2"
+              style={{
+                animation: `fade-in-line 0.5s ease-out ${line.delay}s forwards`,
+                textShadow: `0 0 10px #10b981`,
+              }}
+            >
+              <span className="text-green-500 text-xs">▶</span>
+              <span>{line.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {phase === "resolve" && (
         <div className="flex gap-2">
