@@ -8,6 +8,7 @@ import { Research } from "@/components/Research";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 import { IntroSequence } from "@/components/IntroSequence";
+import { Drake } from "@/components/Drake";
 
 const Index = () => {
   const [introDone, setIntroDone] = useState(false);
@@ -35,6 +36,7 @@ const Index = () => {
           <Contact />
         </main>
         <Footer />
+        <Drake />
       </div>
     </>
   );
