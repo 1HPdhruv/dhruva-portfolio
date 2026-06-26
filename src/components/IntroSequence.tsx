@@ -589,26 +589,63 @@ function Stage4Network({ onDone }: { onDone: () => void }) {
               <line
                 key={i}
                 x1={`${a.x}%`} y1={`${a.y}%`}
+                x2={`${b.x}%`} y2={`${b.y}%`}
+                stroke={NEON_BLUE}
+                strokeWidth="1.5"
+                opacity="0.6"
+                strokeDasharray="4 4"
+                style={{ animation: "dash-anim 1.2s linear infinite" }}
+              />
+            );
+          })}
+        </svg>
+
+        {nodes.map((n) => (
+          <div
+            key={n.id}
+            className={`absolute flex flex-col items-center transition-all duration-500 ${
+              n.active ? "opacity-100 scale-100" : "opacity-0 scale-50"
+            }`}
+            style={{ left: `${n.x}%`, top: `${n.y}%`, marginLeft: "-20px", marginTop: "-20px" }}
+          >
+            <div
+              className={`relative w-10 h-10 rounded-full flex items-center justify-center border-2 font-mono text-xs font-bold ${
+                n.active
+                  ? "border-blue-400 bg-blue-900/60 text-blue-300 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
+                  : "border-gray-700 bg-gray-900 text-gray-600"
+              }`}
+            >
+              {n.label}
+              {n.active && (
+                <div className="absolute inset-0 rounded-full border border-blue-400 animate-ping opacity-30" />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Word-level timestamps calibrated to Voice-1.mp3 (9.27s) ─────────────────
-// Each entry: { word, t } where t = audioCurrentTime (seconds) when word starts
 const KARAOKE_WORDS: { word: string; t: number; lineBreak?: boolean }[] = [
-  { word: "Access",     t: 0.30 },
-  { word: "granted.",   t: 0.85, lineBreak: true },
-  { word: "Welcome,",   t: 1.65 },
-  { word: "Dhruva",     t: 2.15 },
-  { word: "Mishra.",    t: 2.65, lineBreak: true },
-  { word: "All",        t: 3.45 },
-  { word: "systems",    t: 3.85 },
-  { word: "nominal.",   t: 4.30, lineBreak: true },
-  { word: "Neural",     t: 5.05 },
-  { word: "interfaces", t: 5.60 },
-  { word: "loaded.",    t: 6.15, lineBreak: true },
-  { word: "DRAKE",      t: 6.90 },
-  { word: "online.",    t: 7.40, lineBreak: true },
-  { word: "Awaiting",   t: 7.95 },
-  { word: "your",       t: 8.25 },
-  { word: "command,",   t: 8.52 },
-  { word: "sir.",       t: 8.82 },
+  { word: "Access",      t: 0.30 },
+  { word: "granted.",    t: 0.85, lineBreak: true },
+  { word: "Welcome,",    t: 1.65 },
+  { word: "Dhruva",      t: 2.15 },
+  { word: "Mishra.",     t: 2.65, lineBreak: true },
+  { word: "All",         t: 3.45 },
+  { word: "systems",     t: 3.85 },
+  { word: "nominal.",    t: 4.30, lineBreak: true },
+  { word: "Neural",      t: 5.05 },
+  { word: "interfaces",  t: 5.60 },
+  { word: "loaded.",     t: 6.15, lineBreak: true },
+  { word: "DRAKE",       t: 6.90 },
+  { word: "online.",     t: 7.40, lineBreak: true },
+  { word: "Awaiting",    t: 7.95 },
+  { word: "your",        t: 8.25 },
+  { word: "command,",    t: 8.52 },
+  { word: "sir.",        t: 8.82 },
 ];
 
 // ─── Stage 5: Launch Sequence ─────────────────────────────────────────────────
