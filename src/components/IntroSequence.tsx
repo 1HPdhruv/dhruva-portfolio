@@ -836,36 +836,98 @@ function Stage5Launch({ onComplete }: { onComplete: () => void }) {
 
       {/* ── KARAOKE CAPTION AREA ── */}
       {phase === "access" && (
-              key={i}
-              className="opacity-0 flex items-center gap-2"
+        <div className="w-full max-w-lg px-2">
+          {/* Animated waveform */}
+          <div className="flex items-end justify-center gap-0.5 h-6 mb-4">
+            {Array.from({ length: 28 }).map((_, i) => (
+              <div
+                key={i}
+                className="w-1 rounded-full bg-green-400/60"
+                style={{
+                  height: activeIdx >= 0
+                    ? `${30 + Math.abs(Math.sin((i + activeIdx * 3) * 0.6)) * 70}%`
+                    : "15%",
+                  transition: "height 0.15s ease",
+                  boxShadow: activeIdx >= 0 ? "0 0 4px #10b981" : "none",
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Word-by-word karaoke lines */}
+          <div className="flex flex-col gap-2 items-center">
+            {lines.map((line, lineIdx) => {
+              const lineStart = line[0].globalIdx;
+              const lineEnd = line[line.length - 1].globalIdx;
+              const lineActive = activeIdx >= lineStart && activeIdx <= lineEnd;
+              const linePast = activeIdx > lineEnd;
+              return (
+                <div
+                  key={lineIdx}
+                  className="flex flex-wrap justify-center gap-x-2 gap-y-1 transition-all duration-300"
+                  style={{ opacity: lineActive || linePast ? 1 : 0.2 }}
+                >
+                  {line.map(({ word, globalIdx }) => {
+                    const isActive = activeIdx === globalIdx;
+                    const isPast = activeIdx > globalIdx;
+                    return (
+                      <span
+                        key={globalIdx}
+                        className="font-mono font-bold transition-all duration-150 inline-block"
+                        style={{
+                          fontSize: isActive ? "1.15rem" : "1rem",
+                          color: isActive ? "#00ffcc" : isPast ? "#10b981" : "#4b5563",
+                          textShadow: isActive
+                            ? "0 0 18px #00ffcc, 0 0 40px #00ffcc88"
+                            : isPast
+                            ? "0 0 8px #10b981"
+                            : "none",
+                          transform: isActive ? "scale(1.12) translateY(-1px)" : "scale(1)",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        {word}
+                      </span>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Progress bar */}
+          <div className="mt-5 h-px w-full bg-green-900/40 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-green-500 to-cyan-400 rounded-full transition-all duration-300"
               style={{
-                animation: `fade-in-line 0.5s ease-out ${line.delay}s forwards`,
-                textShadow: `0 0 10px #10b981`,
+                width: activeIdx < 0 ? "0%" : `${((activeIdx + 1) / KARAOKE_WORDS.length) * 100}%`,
+                boxShadow: "0 0 8px #10b981",
               }}
-            >
-              <span className="text-green-500 text-xs">▶</span>
-              <span>{line.text}</span>
-            </div>
-          ))}
+            />
+          </div>
         </div>
       )}
 
+      {/* Countdown dots */}
       {phase === "resolve" && (
         <div className="flex gap-2">
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
               className="w-8 h-2 rounded-full transition-all duration-300"
-              style={{ background: i >= count ? NEON_GREEN : NEON_PURPLE, boxShadow: i >= count ? `0 0 8px ${NEON_GREEN}` : "none" }}
+              style={{
+                background: i >= count ? NEON_GREEN : NEON_PURPLE,
+                boxShadow: i >= count ? `0 0 8px ${NEON_GREEN}` : "none",
+              }}
             />
           ))}
         </div>
       )}
 
       <style>{`
-        @keyframes spin-slow { to { transform: rotate(360deg); } }
+        @keyframes spin-slow   { to { transform: rotate(360deg); } }
         @keyframes spin-medium { to { transform: rotate(360deg); } }
-        @keyframes spin-fast { to { transform: rotate(360deg); } }
+        @keyframes spin-fast   { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
