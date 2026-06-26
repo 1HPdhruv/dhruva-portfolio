@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, ChevronDown, Sparkles, RotateCcw, Zap } from "lucide-react";
+import { X, Send, ChevronDown, Sparkles, RotateCcw, Zap, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 
 // ─── Knowledge Base ───────────────────────────────────────────────────────────
 const KB = {
@@ -248,6 +248,22 @@ function getDrakeResponse(input: string): string {
   return `Hmm, I didn't quite catch that. 🤔 Try asking about:\n\n• Dhruva's **skills** or **projects**\n• His **research** or **education**\n• How to **contact** him\n• His **achievements**\n\nOr just say *"help"* to see all topics I can help with!`;
 }
 
+// ─── Helper: Speak Text via Web Speech Synthesis ──────────────────────────────
+function speakVoice(text: string, enabled: boolean) {
+  if (!enabled || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  // Strip markdown formatting for speech
+  const clean = text
+    .replace(/[#*`_~]/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/📧|📞|💼|🐙|📍|🔡|⚛️|🖥️|🤖|🗄️|🔧|🏆|👋|🚀|🤔/g, "");
+  
+  const utterance = new SpeechSynthesisUtterance(clean);
+  utterance.rate = 1.05;
+  utterance.pitch = 0.95; // Slightly deeper, advanced tech assistant tone
+  window.speechSynthesis.speak(utterance);
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Message = {
   id: number;
@@ -382,14 +398,26 @@ export function Drake() {
   const [newMsgId, setNewMsgId] = useState<number | null>(null);
   const [pulse, setPulse] = useState(false);
   const [unread, setUnread] = useState(0);
+  
+  // Voice & Listening State
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [speechOutput, setSpeechOutput] = useState(true);
+  const [listeningStatus, setListeningStatus] = useState("");
+  
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const msgIdCounter = useRef(1);
+  const recognitionRef = useRef<any>(null);
+  const voiceListeningRef = useRef(voiceListening);
+  voiceListeningRef.current = voiceListening;
+
+  const speechOutputRef = useRef(speechOutput);
+  speechOutputRef.current = speechOutput;
 
   // Scroll to bottom
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, thinking]);
+  }, [messages, thinking, listeningStatus]);
 
   // Pulse the button occasionally when closed
   useEffect(() => {
@@ -422,8 +450,120 @@ export function Drake() {
       setNewMsgId(drakeId);
       setThinking(false);
       if (!open) setUnread((u) => u + 1);
+      
+      // Speak response if speech output is enabled
+      speakVoice(reply, speechOutputRef.current);
     }, delay);
   }, [thinking, open]);
+
+  // ─── Web Speech API: Background Listening (Siri/Jarvis mode) ───
+  useEffect(() => {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      console.warn("SpeechRecognition API not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRec();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => {
+      setListeningStatus("Listening for 'Hey Drake'...");
+    };
+
+    recognition.onerror = (e: any) => {
+      console.warn("Speech recognition error:", e.error);
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        setVoiceListening(false);
+        setListeningStatus("Microphone permission denied.");
+      }
+    };
+
+    recognition.onend = () => {
+      // Auto-restart if voice listening mode is still active
+      if (voiceListeningRef.current && recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch (err) {
+          console.error("Auto-restart recognition error:", err);
+        }
+      } else {
+        setListeningStatus("");
+      }
+    };
+
+    recognition.onresult = (event: any) => {
+      const current = event.resultIndex;
+      const transcript = event.results[current][0].transcript.trim().toLowerCase();
+      console.log("Heard:", transcript);
+
+      // Wake word detection
+      const wakeWords = ["hey drake", "ok drake", "hello drake", "drake"];
+      const hasWakeWord = wakeWords.some((w) => transcript.includes(w));
+
+      if (hasWakeWord) {
+        setOpen(true);
+        setUnread(0);
+        
+        // Extract command after wake word
+        let command = transcript;
+        for (const w of wakeWords) {
+          if (command.includes(w)) {
+            command = command.substring(command.indexOf(w) + w.length).trim();
+            break;
+          }
+        }
+
+        if (command.length > 2) {
+          // User said a command right after wake word e.g., "Hey Drake what are your skills"
+          setListeningStatus(`Heard: "${transcript}"`);
+          send(command);
+        } else {
+          // User just said "Hey Drake"
+          const wakeReply = "Awaiting your command, sir.";
+          setListeningStatus("Drake activated. Listening for command...");
+          speakVoice(wakeReply, speechOutputRef.current);
+          
+          const drakeId = msgIdCounter.current++;
+          setMessages((prev) => [
+            ...prev,
+            { id: drakeId, role: "drake", text: wakeReply, timestamp: new Date() },
+          ]);
+          setNewMsgId(drakeId);
+        }
+      }
+    };
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.abort();
+      }
+    };
+  }, [send]);
+
+  // Start/Stop recognition when voiceListening state changes
+  useEffect(() => {
+    if (!recognitionRef.current) return;
+    if (voiceListening) {
+      try { recognitionRef.current.start(); } catch (e) {}
+    } else {
+      try { recognitionRef.current.abort(); } catch (e) {}
+      setListeningStatus("");
+    }
+  }, [voiceListening]);
+
+  const toggleVoiceListening = () => {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      alert("Voice AI feature is not supported in your browser (try Chrome, Edge, or Safari).");
+      return;
+    }
+    setVoiceListening((prev) => !prev);
+  };
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
@@ -442,34 +582,61 @@ export function Drake() {
 
   return (
     <>
-      {/* ── Floating Trigger Button ── */}
-      <button
-        id="drake-toggle-btn"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Open DRAKE AI Assistant"
-        className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer
-          bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600
-          shadow-[0_0_30px_rgba(6,182,212,0.5)] hover:shadow-[0_0_50px_rgba(6,182,212,0.8)]
-          hover:scale-110 active:scale-95
-          ${pulse && !open ? "animate-bounce" : ""}
-          ${open ? "rotate-0" : ""}`}
-      >
-        {open ? (
-          <ChevronDown className="w-6 h-6 text-white" />
-        ) : (
-          <Sparkles className="w-6 h-6 text-white" />
-        )}
-        {/* Ping ring */}
+      {/* ── Floating Trigger Button & Voice Indicator ── */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+        {/* Floating Voice Toggle Badge */}
         {!open && (
-          <span className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping opacity-40" />
+          <button
+            onClick={toggleVoiceListening}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono backdrop-blur-md border transition-all duration-300 shadow-lg cursor-pointer ${
+              voiceListening
+                ? "bg-emerald-950/80 border-emerald-500/60 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.4)] animate-pulse"
+                : "bg-black/60 border-cyan-500/30 text-cyan-400/80 hover:border-cyan-500/60 hover:text-cyan-300"
+            }`}
+            title={voiceListening ? "Drake is listening in background. Say 'Hey Drake'" : "Click to enable background voice assistant (Say 'Hey Drake')"}
+          >
+            {voiceListening ? (
+              <>
+                <Mic className="w-3.5 h-3.5 text-emerald-400 animate-bounce" />
+                <span>LISTENING: HEY DRAKE</span>
+              </>
+            ) : (
+              <>
+                <MicOff className="w-3.5 h-3.5 text-slate-400" />
+                <span>VOICE AI: OFF</span>
+              </>
+            )}
+          </button>
         )}
-        {/* Unread badge */}
-        {unread > 0 && !open && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border border-background">
-            {unread}
-          </span>
-        )}
-      </button>
+
+        <button
+          id="drake-toggle-btn"
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Open DRAKE AI Assistant"
+          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer
+            bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600
+            shadow-[0_0_30px_rgba(6,182,212,0.5)] hover:shadow-[0_0_50px_rgba(6,182,212,0.8)]
+            hover:scale-110 active:scale-95
+            ${pulse && !open ? "animate-bounce" : ""}
+            ${open ? "rotate-0" : ""}`}
+        >
+          {open ? (
+            <ChevronDown className="w-6 h-6 text-white" />
+          ) : (
+            <Sparkles className="w-6 h-6 text-white" />
+          )}
+          {/* Ping ring */}
+          {!open && (
+            <span className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping opacity-40" />
+          )}
+          {/* Unread badge */}
+          {unread > 0 && !open && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border border-background">
+              {unread}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* ── Chat Window ── */}
       <div
@@ -505,6 +672,20 @@ export function Drake() {
             </div>
             <div className="ml-auto flex items-center gap-1">
               <button
+                onClick={toggleVoiceListening}
+                className={`p-1.5 rounded-lg hover:bg-white/5 transition-colors ${voiceListening ? "text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "text-slate-400 hover:text-cyan-400"}`}
+                title={voiceListening ? "Stop background voice listening" : "Start background voice listening (Say 'Hey Drake')"}
+              >
+                {voiceListening ? <Mic className="w-3.5 h-3.5 animate-pulse" /> : <MicOff className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                onClick={() => setSpeechOutput((prev) => !prev)}
+                className={`p-1.5 rounded-lg hover:bg-white/5 transition-colors ${speechOutput ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"}`}
+                title={speechOutput ? "Mute AI voice responses" : "Unmute AI voice responses"}
+              >
+                {speechOutput ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
+              <button
                 onClick={reset}
                 className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-cyan-400 transition-colors"
                 title="Reset conversation"
@@ -519,10 +700,18 @@ export function Drake() {
               </button>
             </div>
           </div>
+
+          {/* Listening Status Bar */}
+          {voiceListening && (
+            <div className="mt-2 text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded px-2 py-1 flex items-center gap-1.5 animate-fade-in-up">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="truncate">{listeningStatus || "Listening for 'Hey Drake'..."}</span>
+            </div>
+          )}
         </div>
 
         {/* ── Messages ── */}
-        <div className="overflow-y-auto p-3 space-y-3" style={{ height: "340px" }}>
+        <div className="overflow-y-auto p-3 space-y-3" style={{ height: voiceListening ? "310px" : "340px" }}>
           {messages.map((msg) => (
             <MessageBubble key={msg.id} msg={msg} isNew={msg.id === newMsgId} />
           ))}
@@ -576,6 +765,36 @@ export function Drake() {
               disabled={thinking}
               id="drake-input"
             />
+            <button
+              onClick={() => send(input)}
+              disabled={!input.trim() || thinking}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer
+                disabled:opacity-30 disabled:cursor-not-allowed
+                bg-gradient-to-br from-cyan-500 to-purple-600
+                hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] active:scale-90"
+            >
+              <Send className="w-3.5 h-3.5 text-white" />
+            </button>
+          </div>
+          <div className="text-[9px] text-center text-slate-600 mt-1.5 font-mono">
+            DRAKE · Powered by Dhruva's knowledge base
+          </div>
+        </div>
+      </div>
+
+      {/* ── Keyframes ── */}
+      <style>{`
+        @keyframes fade-in-up {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.3s ease-out forwards;
+        }
+      `}</style>
+    </>
+  );
+}           />
             <button
               onClick={() => send(input)}
               disabled={!input.trim() || thinking}
