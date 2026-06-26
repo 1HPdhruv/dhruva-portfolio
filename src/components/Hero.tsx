@@ -10,10 +10,11 @@ export const Hero = () => {
   const [count1, setCount1] = useState(0);
   const [count2, setCount2] = useState(0);
   const [count3, setCount3] = useState(0);
+  const [count4, setCount4] = useState(0);
 
   useEffect(() => {
     const duration = 2000;
-    const targets = [5, 7, 10];
+    const targets = [2, 5, 10, 1];
     const steps = 50;
     
     const increments = targets.map(target => target / steps);
@@ -26,6 +27,7 @@ export const Hero = () => {
         setCount1(Math.round(increments[0] * currentStep));
         setCount2(Math.round(increments[1] * currentStep));
         setCount3(Math.round(increments[2] * currentStep));
+        setCount4(Math.round(increments[3] * currentStep));
       } else {
         clearInterval(interval);
       }
@@ -70,18 +72,22 @@ export const Hero = () => {
             </p>
 
             {/* Stats */}
-            <div className="flex gap-6 py-4">
+            <div className="flex flex-wrap gap-6 py-4">
               <div>
-                <div className="text-3xl font-bold text-primary">{count1}+</div>
-                <div className="text-sm text-muted-foreground">Web Apps</div>
+                <div className="text-3xl font-bold text-primary">{count1}</div>
+                <div className="text-sm text-muted-foreground">Hackathons won</div>
               </div>
               <div>
                 <div className="text-3xl font-bold text-accent">{count2}+</div>
-                <div className="text-sm text-muted-foreground">Robotics Projects</div>
+                <div className="text-sm text-muted-foreground">Robots Built</div>
               </div>
               <div>
                 <div className="text-3xl font-bold text-primary">{count3}+</div>
-                <div className="text-sm text-muted-foreground">Hackathons</div>
+                <div className="text-sm text-muted-foreground">Web Applications</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-accent">{count4}</div>
+                <div className="text-sm text-muted-foreground">Ideathon Won</div>
               </div>
             </div>
 
