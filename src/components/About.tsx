@@ -81,7 +81,7 @@ export const About = () => {
         <div className="animate-fade-in">
           <h3 className="text-2xl font-bold mb-4 text-center">Technical Skills</h3>
           <p className="text-center text-muted-foreground mb-10 max-w-xl mx-auto">
-            Hover an icon to see proficiency. Tech orbits a central AI core.
+            Hover an icon to explore the tech stack orbiting the central AI core.
           </p>
           <OrbitingSkills />
         </div>
