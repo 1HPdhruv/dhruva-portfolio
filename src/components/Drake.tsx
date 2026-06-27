@@ -834,6 +834,154 @@ function MessageBubble({ msg, isNew }: { msg: Message; isNew: boolean }) {
   );
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Siri-like Animated Orb (Canvas) ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+type OrbState = "idle" | "listening" | "thinking" | "speaking";
+
+function DrakeOrb({ state, statusText, onDismiss }: { state: OrbState; statusText: string; onDismiss: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const frameRef = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const size = 280;
+    canvas.width = size * 2;
+    canvas.height = size * 2;
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+    ctx.scale(2, 2);
+
+    const cx = size / 2;
+    const cy = size / 2;
+    let animId: number;
+
+    const draw = () => {
+      frameRef.current++;
+      const t = frameRef.current * 0.018;
+      ctx.clearRect(0, 0, size, size);
+
+      const intensity = state === "listening" ? 1.6 : state === "thinking" ? 2.2 : state === "speaking" ? 1.8 : 0.5;
+      const baseRadius = state === "listening" ? 68 : state === "thinking" ? 60 : state === "speaking" ? 72 : 55;
+      const blobCount = 5;
+      const layers = state === "idle" ? 3 : 5;
+
+      for (let layer = 0; layer < layers; layer++) {
+        const layerAlpha = state === "idle" ? 0.15 - layer * 0.03 : 0.22 - layer * 0.03;
+        const hueShift = layer * 55 + t * 25 * intensity;
+        const colors = [
+          `hsla(${190 + hueShift}, 90%, 60%, ${layerAlpha})`,
+          `hsla(${270 + hueShift}, 85%, 55%, ${layerAlpha})`,
+          `hsla(${330 + hueShift}, 80%, 55%, ${layerAlpha})`,
+          `hsla(${140 + hueShift}, 85%, 50%, ${layerAlpha})`,
+        ];
+
+        ctx.beginPath();
+        const steps = 180;
+        for (let i = 0; i <= steps; i++) {
+          const angle = (i / steps) * Math.PI * 2;
+          let r = baseRadius + layer * 6;
+          for (let b = 0; b < blobCount; b++) {
+            const freq = b + 1.5;
+            const phase = b * 1.3 + layer * 0.7;
+            const amp = (6 + layer * 3) * intensity * Math.sin(t * (0.8 + b * 0.3) + phase);
+            r += amp * Math.sin(freq * angle + t * intensity + phase);
+          }
+          const x = cx + r * Math.cos(angle);
+          const y = cy + r * Math.sin(angle);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseRadius + 40);
+        grad.addColorStop(0, colors[layer % colors.length]);
+        grad.addColorStop(0.6, colors[(layer + 1) % colors.length]);
+        grad.addColorStop(1, "hsla(0,0%,0%,0)");
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 35);
+      const coreHue = state === "listening" ? 160 : state === "thinking" ? 270 : state === "speaking" ? 200 : 210;
+      const corePulse = 0.3 + Math.sin(t * 3) * 0.15;
+      coreGrad.addColorStop(0, `hsla(${coreHue}, 100%, 80%, ${corePulse + 0.3})`);
+      coreGrad.addColorStop(0.5, `hsla(${coreHue}, 90%, 60%, ${corePulse})`);
+      coreGrad.addColorStop(1, "hsla(0,0%,0%,0)");
+      ctx.beginPath();
+      ctx.arc(cx, cy, 30 + Math.sin(t * 2) * 5, 0, Math.PI * 2);
+      ctx.fillStyle = coreGrad;
+      ctx.fill();
+
+      animId = requestAnimationFrame(draw);
+    };
+
+    draw();
+    return () => cancelAnimationFrame(animId);
+  }, [state]);
+
+  const stateLabels: Record<OrbState, string> = {
+    idle: "Say \"Hey Drake\" to activate",
+    listening: "Listening…",
+    thinking: "Processing…",
+    speaking: "Speaking…",
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none cursor-pointer"
+      onClick={onDismiss}
+      style={{
+        background: "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.95) 100%)",
+        backdropFilter: "blur(20px)",
+        animation: "orb-fadein 0.4s ease-out forwards",
+      }}
+    >
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: 340, height: 340,
+          background: state === "listening"
+            ? "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)"
+            : state === "thinking"
+            ? "radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%)"
+            : "radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%)",
+          animation: "orb-ring-pulse 2s ease-in-out infinite",
+        }}
+      />
+      <canvas
+        ref={canvasRef}
+        className="relative z-10"
+        style={{
+          filter: `drop-shadow(0 0 40px ${
+            state === "listening" ? "rgba(16,185,129,0.5)"
+            : state === "thinking" ? "rgba(168,85,247,0.5)"
+            : state === "speaking" ? "rgba(6,182,212,0.6)"
+            : "rgba(6,182,212,0.3)"
+          })`,
+        }}
+      />
+      <div className="relative z-10 mt-6 text-center">
+        <div className="font-mono font-bold text-white text-lg tracking-widest mb-2"
+          style={{ textShadow: "0 0 20px rgba(6,182,212,0.6)" }}>
+          DRAKE
+        </div>
+        <div className="font-mono text-sm text-cyan-300/90 tracking-wide">
+          {statusText || stateLabels[state]}
+        </div>
+      </div>
+      <div className="absolute bottom-8 font-mono text-xs text-white/20 tracking-wider">
+        TAP ANYWHERE TO DISMISS
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── Main Drake Component ─────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -853,34 +1001,37 @@ export function Drake() {
   const [pulse, setPulse] = useState(false);
   const [unread, setUnread] = useState(0);
 
-  // Voice & Listening State — defaults ON
-  const [voiceListening, setVoiceListening] = useState(true);
+  // Voice state machine: passive → active → processing → passive
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voicePhase, setVoicePhase] = useState<"passive" | "active" | "processing">("passive");
   const [speechOutput, setSpeechOutput] = useState(true);
   const [listeningStatus, setListeningStatus] = useState("");
+  const [showOrb, setShowOrb] = useState(false);
+  const [orbState, setOrbState] = useState<OrbState>("idle");
+  const [orbStatusText, setOrbStatusText] = useState("");
 
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const msgIdCounter = useRef(1);
   const recognitionRef = useRef<any>(null);
-  const voiceListeningRef = useRef(voiceListening);
-  voiceListeningRef.current = voiceListening;
-
+  const voiceEnabledRef = useRef(voiceEnabled);
+  voiceEnabledRef.current = voiceEnabled;
+  const voicePhaseRef = useRef(voicePhase);
+  voicePhaseRef.current = voicePhase;
   const speechOutputRef = useRef(speechOutput);
   speechOutputRef.current = speechOutput;
+  const activeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Scroll to bottom
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, thinking, listeningStatus]);
 
-  // Pulse the button occasionally when closed
   useEffect(() => {
     if (open) return;
     const t = setInterval(() => setPulse((p) => !p), 3000);
     return () => clearInterval(t);
   }, [open]);
 
-  // Focus input on open
   useEffect(() => {
     if (open) { setTimeout(() => inputRef.current?.focus(), 300); setUnread(0); }
   }, [open]);
@@ -904,17 +1055,25 @@ export function Drake() {
       setThinking(false);
       if (!open) setUnread((u) => u + 1);
 
+      if (speechOutputRef.current) {
+        setOrbState("speaking");
+        setOrbStatusText("");
+      }
       speakVoice(reply, speechOutputRef.current);
+
+      const speechDuration = Math.min(reply.length * 50, 12000) + 1500;
+      setTimeout(() => {
+        setVoicePhase("passive");
+        setOrbState("idle");
+        setTimeout(() => setShowOrb(false), 1200);
+      }, speechDuration);
     }, delay);
   }, [thinking, open]);
 
-  // ─── Web Speech API: Background Listening (always-on, no wake word needed) ──
+  // ─── Web Speech API: Two-Phase Wake Word System ─────────────────────────────
   useEffect(() => {
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) {
-      console.warn("SpeechRecognition API not supported in this browser.");
-      return;
-    }
+    if (!SpeechRec) return;
 
     const recognition = new SpeechRec();
     recognition.continuous = true;
@@ -923,25 +1082,21 @@ export function Drake() {
     recognitionRef.current = recognition;
 
     recognition.onstart = () => {
-      setListeningStatus("🎙️ DRAKE listening — speak your question…");
+      if (voicePhaseRef.current === "passive") {
+        setListeningStatus("Say \"Hey Drake\" to activate…");
+      }
     };
 
     recognition.onerror = (e: any) => {
-      console.warn("Speech recognition error:", e.error);
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setVoiceListening(false);
+        setVoiceEnabled(false);
         setListeningStatus("Microphone access denied.");
       }
-      // For network/no-speech errors, keep auto-restarting
     };
 
     recognition.onend = () => {
-      if (voiceListeningRef.current && recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (err) {
-          // Already started — ignore
-        }
+      if (voiceEnabledRef.current && recognitionRef.current) {
+        try { recognitionRef.current.start(); } catch (_e) { /* */ }
       } else {
         setListeningStatus("");
       }
@@ -950,41 +1105,73 @@ export function Drake() {
     recognition.onresult = (event: any) => {
       const current = event.resultIndex;
       const transcript = event.results[current][0].transcript.trim();
-      const confidence = event.results[current][0].confidence;
-      console.log("Heard:", transcript, "Confidence:", confidence);
+      if (transcript.length < 2) return;
+      const lower = transcript.toLowerCase();
 
-      if (transcript.length < 2) return; // Ignore noise
+      // ── PASSIVE: only wake words ──
+      if (voicePhaseRef.current === "passive") {
+        const wakeWords = ["hey drake", "ok drake", "hello drake", "drake"];
+        const hasWake = wakeWords.some((w) => lower.includes(w));
+        if (!hasWake) return;
 
-      // Strip any "hey drake" prefix if present, but don't require it
-      let command = transcript;
-      const wakeWords = ["hey drake", "ok drake", "hello drake"];
-      for (const w of wakeWords) {
-        if (command.toLowerCase().includes(w)) {
-          command = command.substring(command.toLowerCase().indexOf(w) + w.length).trim();
-          break;
+        let command = lower;
+        for (const w of wakeWords) {
+          if (command.includes(w)) {
+            command = command.substring(command.indexOf(w) + w.length).trim();
+            break;
+          }
         }
-      }
 
-      // If nothing remains after stripping wake word, just acknowledge
-      if (command.length < 2) {
-        const wakeReply = "Yes, I'm listening. What would you like to know about Dhruva?";
-        setListeningStatus("Drake activated — awaiting command…");
-        setOpen(true);
-        speakVoice(wakeReply, speechOutputRef.current);
-        const drakeId = msgIdCounter.current++;
-        setMessages((prev) => [
-          ...prev,
-          { id: drakeId, role: "drake", text: wakeReply, timestamp: new Date() },
-        ]);
-        setNewMsgId(drakeId);
+        if (command.length > 3) {
+          setVoicePhase("processing");
+          setShowOrb(true);
+          setOrbState("thinking");
+          setOrbStatusText(`"${command}"`);
+          setOpen(true);
+          setUnread(0);
+          send(command);
+        } else {
+          setVoicePhase("active");
+          setShowOrb(true);
+          setOrbState("listening");
+          setOrbStatusText("");
+          setListeningStatus("Drake activated — listening for command…");
+          speakVoice("Yes?", speechOutputRef.current);
+
+          if (activeTimeoutRef.current) clearTimeout(activeTimeoutRef.current);
+          activeTimeoutRef.current = setTimeout(() => {
+            if (voicePhaseRef.current === "active") {
+              setVoicePhase("passive");
+              setOrbState("idle");
+              setTimeout(() => setShowOrb(false), 800);
+              setListeningStatus("Say \"Hey Drake\" to activate…");
+            }
+          }, 8000);
+        }
         return;
       }
 
-      // Process the voice query
-      setListeningStatus(`Heard: "${command}"`);
-      setOpen(true);
-      setUnread(0);
-      send(command);
+      // ── ACTIVE: capture command ──
+      if (voicePhaseRef.current === "active") {
+        if (activeTimeoutRef.current) clearTimeout(activeTimeoutRef.current);
+
+        let command = lower;
+        const wakeWords = ["hey drake", "ok drake", "hello drake", "drake"];
+        for (const w of wakeWords) {
+          if (command.includes(w)) {
+            command = command.substring(command.indexOf(w) + w.length).trim();
+            break;
+          }
+        }
+        if (command.length < 2) command = transcript;
+
+        setVoicePhase("processing");
+        setOrbState("thinking");
+        setOrbStatusText(`"${command}"`);
+        setOpen(true);
+        setUnread(0);
+        send(command);
+      }
     };
 
     return () => {
@@ -992,31 +1179,39 @@ export function Drake() {
         recognitionRef.current.onend = null;
         recognitionRef.current.abort();
       }
+      if (activeTimeoutRef.current) clearTimeout(activeTimeoutRef.current);
     };
   }, [send]);
 
-  // Auto-start recognition when component mounts (or when voiceListening changes)
   useEffect(() => {
     if (!recognitionRef.current) return;
-    if (voiceListening) {
-      // Small delay to let the browser settle after intro sequence interaction
+    if (voiceEnabled) {
       const timer = setTimeout(() => {
-        try { recognitionRef.current.start(); } catch (_e) { /* already started */ }
+        try { recognitionRef.current.start(); } catch (_e) { /* */ }
       }, 1500);
       return () => clearTimeout(timer);
     } else {
-      try { recognitionRef.current.abort(); } catch (_e) { /* not running */ }
+      try { recognitionRef.current.abort(); } catch (_e) { /* */ }
       setListeningStatus("");
+      setShowOrb(false);
     }
-  }, [voiceListening]);
+  }, [voiceEnabled]);
 
-  const toggleVoiceListening = () => {
+  const toggleVoice = () => {
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRec) {
-      alert("Voice AI feature is not supported in your browser (try Chrome, Edge, or Safari).");
+      alert("Voice AI is not supported in this browser (try Chrome, Edge, or Safari).");
       return;
     }
-    setVoiceListening((prev) => !prev);
+    setVoiceEnabled((prev) => !prev);
+    if (voiceEnabled) { setShowOrb(false); setVoicePhase("passive"); }
+  };
+
+  const dismissOrb = () => {
+    setShowOrb(false);
+    setVoicePhase("passive");
+    setOrbState("idle");
+    if (activeTimeoutRef.current) clearTimeout(activeTimeoutRef.current);
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
@@ -1024,35 +1219,29 @@ export function Drake() {
   };
 
   const reset = () => {
-    setMessages([{
-      id: 0, role: "drake",
-      text: `Hello again! I'm **DRAKE**. Ask me anything about Dhruva! 🚀`,
-      timestamp: new Date(),
-    }]);
-    setNewMsgId(0);
-    setUnread(0);
-    msgIdCounter.current = 1;
+    setMessages([{ id: 0, role: "drake", text: `Hello again! I'm **DRAKE**. Ask me anything about Dhruva! 🚀`, timestamp: new Date() }]);
+    setNewMsgId(0); setUnread(0); msgIdCounter.current = 1;
   };
 
   return (
     <>
-      {/* ── Floating Trigger Button & Voice Indicator ── */}
+      {showOrb && <DrakeOrb state={orbState} statusText={orbStatusText} onDismiss={dismissOrb} />}
+
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
-        {/* Floating Voice Status Badge */}
         {!open && (
           <button
-            onClick={toggleVoiceListening}
+            onClick={toggleVoice}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono backdrop-blur-md border transition-all duration-300 shadow-lg cursor-pointer ${
-              voiceListening
+              voiceEnabled
                 ? "bg-emerald-950/80 border-emerald-500/60 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.4)] animate-pulse"
                 : "bg-black/60 border-cyan-500/30 text-cyan-400/80 hover:border-cyan-500/60 hover:text-cyan-300"
             }`}
-            title={voiceListening ? "DRAKE is actively listening. Click to mute." : "Click to enable DRAKE voice assistant"}
+            title={voiceEnabled ? "DRAKE is listening for wake word." : "Enable DRAKE voice assistant"}
           >
-            {voiceListening ? (
+            {voiceEnabled ? (
               <>
                 <Mic className="w-3.5 h-3.5 text-emerald-400 animate-bounce" />
-                <span>DRAKE LISTENING</span>
+                <span>SAY "HEY DRAKE"</span>
               </>
             ) : (
               <>
@@ -1071,30 +1260,19 @@ export function Drake() {
             bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600
             shadow-[0_0_30px_rgba(6,182,212,0.5)] hover:shadow-[0_0_50px_rgba(6,182,212,0.8)]
             hover:scale-110 active:scale-95
-            ${pulse && !open ? "animate-bounce" : ""}
-            ${open ? "rotate-0" : ""}`}
+            ${pulse && !open ? "animate-bounce" : ""} ${open ? "rotate-0" : ""}`}
         >
-          {open ? (
-            <ChevronDown className="w-6 h-6 text-white" />
-          ) : (
-            <Sparkles className="w-6 h-6 text-white" />
-          )}
-          {!open && (
-            <span className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping opacity-40" />
-          )}
+          {open ? <ChevronDown className="w-6 h-6 text-white" /> : <Sparkles className="w-6 h-6 text-white" />}
+          {!open && <span className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping opacity-40" />}
           {unread > 0 && !open && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border border-background">
-              {unread}
-            </span>
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border border-background">{unread}</span>
           )}
         </button>
       </div>
 
-      {/* ── Chat Window ── */}
       <div
         className={`fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden
-          border border-cyan-500/30 backdrop-blur-xl
-          transition-all duration-400 origin-bottom-right
+          border border-cyan-500/30 backdrop-blur-xl transition-all duration-400 origin-bottom-right
           ${open ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-90 pointer-events-none"}`}
         style={{
           background: "linear-gradient(135deg, rgba(5,10,30,0.97) 0%, rgba(10,5,30,0.97) 100%)",
@@ -1102,11 +1280,9 @@ export function Drake() {
           maxHeight: "80vh",
         }}
       >
-        {/* ── Header ── */}
         <div className="relative px-4 py-3 border-b border-cyan-500/20"
           style={{ background: "linear-gradient(90deg, rgba(6,182,212,0.08), rgba(168,85,247,0.08))" }}>
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60" />
-
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.6)]">
@@ -1119,50 +1295,41 @@ export function Drake() {
                 DRAKE
                 <span className="text-[9px] font-normal text-cyan-400/60 border border-cyan-500/30 rounded px-1 py-0.5">SLM</span>
               </div>
-              <div className="text-[11px] text-cyan-400/70 font-mono">Semantic Language Model · Always On</div>
+              <div className="text-[11px] text-cyan-400/70 font-mono">Semantic Language Model · Voice AI</div>
             </div>
             <div className="ml-auto flex items-center gap-1">
-              <button
-                onClick={toggleVoiceListening}
-                className={`p-1.5 rounded-lg hover:bg-white/5 transition-colors ${voiceListening ? "text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "text-slate-400 hover:text-cyan-400"}`}
-                title={voiceListening ? "Mute voice input" : "Enable voice input"}
-              >
-                {voiceListening ? <Mic className="w-3.5 h-3.5 animate-pulse" /> : <MicOff className="w-3.5 h-3.5" />}
+              <button onClick={toggleVoice}
+                className={`p-1.5 rounded-lg hover:bg-white/5 transition-colors ${voiceEnabled ? "text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "text-slate-400 hover:text-cyan-400"}`}
+                title={voiceEnabled ? "Disable voice" : "Enable voice"}>
+                {voiceEnabled ? <Mic className="w-3.5 h-3.5 animate-pulse" /> : <MicOff className="w-3.5 h-3.5" />}
               </button>
-              <button
-                onClick={() => setSpeechOutput((prev) => !prev)}
+              <button onClick={() => setSpeechOutput((prev) => !prev)}
                 className={`p-1.5 rounded-lg hover:bg-white/5 transition-colors ${speechOutput ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"}`}
-                title={speechOutput ? "Mute AI voice responses" : "Unmute AI voice responses"}
-              >
+                title={speechOutput ? "Mute responses" : "Unmute responses"}>
                 {speechOutput ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
               </button>
-              <button
-                onClick={reset}
-                className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-cyan-400 transition-colors"
-                title="Reset conversation"
-              >
+              <button onClick={reset} className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-cyan-400 transition-colors" title="Reset">
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
-              <button
-                onClick={() => setOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
-              >
+              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Listening Status Bar */}
-          {voiceListening && (
+          {voiceEnabled && (
             <div className="mt-2 text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded px-2 py-1 flex items-center gap-1.5 animate-fade-in-up">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="truncate">{listeningStatus || "🎙️ DRAKE listening — speak your question…"}</span>
+              <span className={`w-2 h-2 rounded-full ${voicePhase === "active" ? "bg-amber-400" : voicePhase === "processing" ? "bg-purple-400" : "bg-emerald-400"} animate-ping`} />
+              <span className="truncate">
+                {voicePhase === "active" ? "🎙️ Listening for your command…"
+                  : voicePhase === "processing" ? "⚡ Processing…"
+                  : listeningStatus || "Say \"Hey Drake\" to activate…"}
+              </span>
             </div>
           )}
         </div>
 
-        {/* ── Messages ── */}
-        <div className="overflow-y-auto p-3 space-y-3" style={{ height: voiceListening ? "310px" : "340px" }}>
+        <div className="overflow-y-auto p-3 space-y-3" style={{ height: voiceEnabled ? "310px" : "340px" }}>
           {messages.map((msg) => (
             <MessageBubble key={msg.id} msg={msg} isNew={msg.id === newMsgId} />
           ))}
@@ -1180,19 +1347,13 @@ export function Drake() {
           <div ref={endRef} />
         </div>
 
-        {/* ── Suggested prompts ── */}
         {messages.length <= 2 && (
           <div className="px-3 pb-2">
             <div className="text-[10px] text-cyan-400/50 font-mono mb-1.5 tracking-wider">QUICK QUESTIONS</div>
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTED.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => send(s)}
-                  className="text-[11px] font-mono px-2.5 py-1 rounded-full border border-cyan-500/30 text-cyan-400/80
-                    hover:border-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-500/5
-                    transition-all duration-200 cursor-pointer"
-                >
+                <button key={s} onClick={() => send(s)}
+                  className="text-[11px] font-mono px-2.5 py-1 rounded-full border border-cyan-500/30 text-cyan-400/80 hover:border-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-500/5 transition-all duration-200 cursor-pointer">
                   {s}
                 </button>
               ))}
@@ -1200,47 +1361,39 @@ export function Drake() {
           </div>
         )}
 
-        {/* ── Input ── */}
         <div className="px-3 pb-3 border-t border-cyan-500/10 pt-2">
           <div className="flex gap-2 items-center bg-black/40 border border-cyan-500/20 rounded-xl px-3 py-2
-            focus-within:border-cyan-400/50 focus-within:shadow-[0_0_15px_rgba(6,182,212,0.1)]
-            transition-all duration-200">
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
+            focus-within:border-cyan-400/50 focus-within:shadow-[0_0_15px_rgba(6,182,212,0.1)] transition-all duration-200">
+            <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey}
               placeholder="Ask me anything about Dhruva…"
               className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none font-mono min-w-0"
-              maxLength={300}
-              disabled={thinking}
-              id="drake-input"
-            />
-            <button
-              onClick={() => send(input)}
-              disabled={!input.trim() || thinking}
+              maxLength={300} disabled={thinking} id="drake-input" />
+            <button onClick={() => send(input)} disabled={!input.trim() || thinking}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer
-                disabled:opacity-30 disabled:cursor-not-allowed
-                bg-gradient-to-br from-cyan-500 to-purple-600
-                hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] active:scale-90"
-            >
+                disabled:opacity-30 disabled:cursor-not-allowed bg-gradient-to-br from-cyan-500 to-purple-600
+                hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] active:scale-90">
               <Send className="w-3.5 h-3.5 text-white" />
             </button>
           </div>
           <div className="text-[9px] text-center text-slate-600 mt-1.5 font-mono">
-            DRAKE · Semantic Language Model · Always Listening
+            DRAKE · SLM · Say "Hey Drake" to activate voice
           </div>
         </div>
       </div>
 
-      {/* ── Keyframes ── */}
       <style>{`
         @keyframes fade-in-up {
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.3s ease-out forwards;
+        .animate-fade-in-up { animation: fade-in-up 0.3s ease-out forwards; }
+        @keyframes orb-fadein {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes orb-ring-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.6; }
+          50% { transform: scale(1.15); opacity: 1; }
         }
       `}</style>
     </>
