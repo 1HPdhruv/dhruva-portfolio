@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { About } from "@/components/About";
@@ -11,21 +10,10 @@ import { IntroSequence } from "@/components/IntroSequence";
 import { Drake } from "@/components/Drake";
 
 const Index = () => {
-  const [introDone, setIntroDone] = useState(false);
-
   return (
     <>
-      {!introDone && (
-        <IntroSequence onComplete={() => setIntroDone(true)} />
-      )}
-      <div
-        className="min-h-screen"
-        style={{
-          opacity: introDone ? 1 : 0,
-          transition: "opacity 0.8s ease",
-          pointerEvents: introDone ? "auto" : "none",
-        }}
-      >
+      <IntroSequence />
+      <div className="min-h-screen opacity-100 pointer-events-auto">
         <Navigation />
         <main>
           <Hero />
