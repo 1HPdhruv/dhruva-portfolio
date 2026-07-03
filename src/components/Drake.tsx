@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, ChevronDown, Sparkles, RotateCcw, Zap, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { X, Send, Sparkles, RotateCcw, Zap, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── Knowledge Base ───────────────────────────────────────────────────────────
@@ -985,13 +985,15 @@ function DrakeOrb({ state, statusText, onDismiss }: { state: OrbState; statusTex
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── Main Drake Component ─────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
+const GREETING_TEXT = `Hello! I'm **DRAKE** — Dhruva's AI assistant. 🚀\n\nI know everything about Dhruva: his skills, projects, research, achievements, and more.\n\nWhat would you like to know?`;
+
 export function Drake() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 0,
       role: "drake",
-      text: `Hello! I'm **DRAKE** — Dhruva's AI assistant. 🚀\n\nI know everything about Dhruva: his skills, projects, research, achievements, and more.\n\nWhat would you like to know?`,
+      text: GREETING_TEXT,
       timestamp: new Date(),
     },
   ]);
@@ -1000,6 +1002,7 @@ export function Drake() {
   const [newMsgId, setNewMsgId] = useState<number | null>(null);
   const [pulse, setPulse] = useState(false);
   const [unread, setUnread] = useState(0);
+  const hasGreeted = useRef(false);
 
   // Voice state machine: passive → active → processing → passive
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -1033,7 +1036,16 @@ export function Drake() {
   }, [open]);
 
   useEffect(() => {
-    if (open) { setTimeout(() => inputRef.current?.focus(), 300); setUnread(0); }
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 300);
+      setUnread(0);
+      // Speak greeting only the first time the panel opens
+      if (!hasGreeted.current) {
+        hasGreeted.current = true;
+        const greetingClean = `Hello! I'm DRAKE, Dhruva's AI assistant. I know everything about Dhruva: his skills, projects, research, achievements, and more. What would you like to know?`;
+        speakVoice(greetingClean, speechOutputRef.current);
+      }
+    }
   }, [open]);
 
   const send = useCallback((text: string) => {
@@ -1227,119 +1239,223 @@ export function Drake() {
     <>
       {showOrb && <DrakeOrb state={orbState} statusText={orbStatusText} onDismiss={dismissOrb} />}
 
+      {/* ── Premium AI Button ── */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
-        {!open && (
-          <button
-            onClick={toggleVoice}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono backdrop-blur-md border transition-all duration-300 shadow-lg cursor-pointer ${
-              voiceEnabled
-                ? "bg-emerald-950/80 border-emerald-500/60 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.4)] animate-pulse"
-                : "bg-black/60 border-cyan-500/30 text-cyan-400/80 hover:border-cyan-500/60 hover:text-cyan-300"
-            }`}
-            title={voiceEnabled ? "DRAKE is listening for wake word." : "Enable DRAKE voice assistant"}
-          >
-            {voiceEnabled ? (
-              <>
-                <Mic className="w-3.5 h-3.5 text-emerald-400 animate-bounce" />
-                <span>SAY "HEY DRAKE"</span>
-              </>
-            ) : (
-              <>
-                <MicOff className="w-3.5 h-3.5 text-slate-400" />
-                <span>VOICE AI: OFF</span>
-              </>
-            )}
-          </button>
-        )}
-
         <button
           id="drake-toggle-btn"
           onClick={() => setOpen((o) => !o)}
           aria-label="Open DRAKE AI Assistant"
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer
-            bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600
-            shadow-[0_0_30px_rgba(6,182,212,0.5)] hover:shadow-[0_0_50px_rgba(6,182,212,0.8)]
-            hover:scale-110 active:scale-95
-            ${pulse && !open ? "animate-bounce" : ""} ${open ? "rotate-0" : ""}`}
+          className="relative group cursor-pointer select-none"
+          style={{ outline: "none" }}
         >
-          {open ? <ChevronDown className="w-6 h-6 text-white" /> : <Sparkles className="w-6 h-6 text-white" />}
-          {!open && <span className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping opacity-40" />}
-          {unread > 0 && !open && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border border-background">{unread}</span>
+          {/* Ambient glow ring */}
+          {!open && (
+            <span
+              className="absolute inset-0 rounded-full"
+              style={{
+                boxShadow: "0 0 0 0 rgba(6,182,212,0.5)",
+                animation: pulse ? "drake-ring-pulse 2.4s ease-out infinite" : "none",
+                borderRadius: "9999px",
+              }}
+            />
           )}
+
+          {/* Button body */}
+          <div
+            className={`relative flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all duration-300
+              bg-gradient-to-br from-[#050f1e] via-[#0a0520] to-[#050f1e]
+              ${
+                open
+                  ? "border-cyan-400/50 shadow-[0_0_40px_rgba(6,182,212,0.35),inset_0_1px_0_rgba(6,182,212,0.2)]"
+                  : "border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.2)] hover:border-cyan-400/60 hover:shadow-[0_0_50px_rgba(6,182,212,0.4)]"
+              }
+              group-active:scale-95`}
+            style={{ backdropFilter: "blur(16px)" }}
+          >
+            {/* Shimmer line */}
+            <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+
+            {/* Orb icon */}
+            <div
+              className={`relative w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300
+                bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600
+                shadow-[0_0_18px_rgba(6,182,212,0.6)]
+                ${!open && pulse ? "scale-105" : ""}`}
+            >
+              {open
+                ? <X className="w-4 h-4 text-white" />
+                : <Sparkles className="w-4 h-4 text-white" />}
+            </div>
+
+            {/* Labels */}
+            <div className="flex flex-col items-start leading-none">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-white font-mono tracking-[0.2em] text-sm">DRAKE</span>
+                <span className="text-[9px] font-mono text-cyan-400/70 border border-cyan-500/30 rounded px-1 py-0.5 leading-none">AI</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {/* Voice dot */}
+                <span
+                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                    voiceEnabled ? "bg-emerald-400" : "bg-slate-500"
+                  }`}
+                  style={voiceEnabled ? { animation: "drake-mic-pulse 1.8s ease-in-out infinite" } : {}}
+                />
+                <span className="text-[10px] font-mono text-cyan-400/60 tracking-wide">
+                  {open ? "tap to close" : voiceEnabled ? 'say "hey drake"' : "ask anything"}
+                </span>
+              </div>
+            </div>
+
+            {/* Unread badge */}
+            {unread > 0 && !open && (
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 text-white text-[10px] font-bold flex items-center justify-center shadow-[0_0_10px_rgba(244,63,94,0.6)] border border-background">
+                {unread}
+              </span>
+            )}
+          </div>
         </button>
       </div>
 
+      {/* ── Chat Panel ── */}
       <div
-        className={`fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden
-          border border-cyan-500/30 backdrop-blur-xl transition-all duration-400 origin-bottom-right
+        className={`fixed z-50 w-[380px] max-w-[calc(100vw-1.5rem)] rounded-3xl overflow-hidden
+          transition-all duration-500 origin-bottom-right
           ${open ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-90 pointer-events-none"}`}
         style={{
-          background: "linear-gradient(135deg, rgba(5,10,30,0.97) 0%, rgba(10,5,30,0.97) 100%)",
-          boxShadow: "0 0 60px rgba(6,182,212,0.15), 0 0 120px rgba(168,85,247,0.08), inset 0 1px 0 rgba(6,182,212,0.1)",
-          maxHeight: "80vh",
+          bottom: "6rem",
+          right: "1.5rem",
+          background: "linear-gradient(160deg, rgba(4,9,24,0.98) 0%, rgba(8,3,22,0.98) 100%)",
+          border: "1px solid rgba(6,182,212,0.25)",
+          boxShadow: "0 0 80px rgba(6,182,212,0.12), 0 0 160px rgba(168,85,247,0.07), inset 0 1px 0 rgba(6,182,212,0.12), inset 0 -1px 0 rgba(168,85,247,0.06)",
+          maxHeight: "82vh",
         }}
       >
-        <div className="relative px-4 py-3 border-b border-cyan-500/20"
-          style={{ background: "linear-gradient(90deg, rgba(6,182,212,0.08), rgba(168,85,247,0.08))" }}>
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60" />
+        {/* Header */}
+        <div
+          className="relative px-5 py-4"
+          style={{
+            background: "linear-gradient(90deg, rgba(6,182,212,0.06) 0%, rgba(168,85,247,0.06) 50%, rgba(6,182,212,0.04) 100%)",
+            borderBottom: "1px solid rgba(6,182,212,0.15)",
+          }}
+        >
+          {/* Top shimmer */}
+          <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
+
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.6)]">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <div
+                className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-600 to-purple-600 flex items-center justify-center"
+                style={{ boxShadow: "0 0 24px rgba(6,182,212,0.55)" }}
+              >
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-400 border-2 border-background shadow-[0_0_6px_rgba(74,222,128,0.8)]" />
+              <span
+                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2"
+                style={{ borderColor: "#040918", boxShadow: "0 0 8px rgba(74,222,128,0.9)" }}
+              />
             </div>
-            <div>
-              <div className="font-bold text-white font-mono tracking-wider text-sm flex items-center gap-1.5">
-                DRAKE
-                <span className="text-[9px] font-normal text-cyan-400/60 border border-cyan-500/30 rounded px-1 py-0.5">SLM</span>
+
+            {/* Name block */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white font-mono tracking-[0.15em] text-sm">DRAKE</span>
+                <span className="text-[9px] font-mono text-cyan-400/60 border border-cyan-500/25 rounded-md px-1.5 py-0.5 leading-none">SLM</span>
               </div>
-              <div className="text-[11px] text-cyan-400/70 font-mono">Semantic Language Model · Voice AI</div>
+              <div className="text-[11px] text-cyan-300/50 font-mono mt-0.5 truncate">Semantic AI · Voice-enabled</div>
             </div>
-            <div className="ml-auto flex items-center gap-1">
-              <button onClick={toggleVoice}
-                className={`p-1.5 rounded-lg hover:bg-white/5 transition-colors ${voiceEnabled ? "text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "text-slate-400 hover:text-cyan-400"}`}
-                title={voiceEnabled ? "Disable voice" : "Enable voice"}>
-                {voiceEnabled ? <Mic className="w-3.5 h-3.5 animate-pulse" /> : <MicOff className="w-3.5 h-3.5" />}
+
+            {/* Controls */}
+            <div className="flex items-center gap-0.5 ml-auto">
+              <button
+                onClick={toggleVoice}
+                className={`p-2 rounded-xl hover:bg-white/5 transition-all duration-200 ${
+                  voiceEnabled ? "text-emerald-400" : "text-slate-500 hover:text-slate-300"
+                }`}
+                title={voiceEnabled ? "Disable voice" : "Enable voice"}
+              >
+                {voiceEnabled
+                  ? <Mic className="w-3.5 h-3.5" style={{ filter: "drop-shadow(0 0 4px rgba(52,211,153,0.8))" }} />
+                  : <MicOff className="w-3.5 h-3.5" />}
               </button>
-              <button onClick={() => setSpeechOutput((prev) => !prev)}
-                className={`p-1.5 rounded-lg hover:bg-white/5 transition-colors ${speechOutput ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"}`}
-                title={speechOutput ? "Mute responses" : "Unmute responses"}>
+              <button
+                onClick={() => setSpeechOutput((prev) => !prev)}
+                className={`p-2 rounded-xl hover:bg-white/5 transition-all duration-200 ${
+                  speechOutput ? "text-cyan-400" : "text-slate-500 hover:text-slate-400"
+                }`}
+                title={speechOutput ? "Mute" : "Unmute"}
+              >
                 {speechOutput ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
               </button>
-              <button onClick={reset} className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-cyan-400 transition-colors" title="Reset">
+              <button
+                onClick={reset}
+                className="p-2 rounded-xl hover:bg-white/5 text-slate-500 hover:text-cyan-400 transition-all duration-200"
+                title="Reset chat"
+              >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
-              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+              <button
+                onClick={() => setOpen(false)}
+                className="p-2 rounded-xl hover:bg-white/5 text-slate-500 hover:text-white transition-all duration-200"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
+          {/* Voice status strip */}
           {voiceEnabled && (
-            <div className="mt-2 text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded px-2 py-1 flex items-center gap-1.5 animate-fade-in-up">
-              <span className={`w-2 h-2 rounded-full ${voicePhase === "active" ? "bg-amber-400" : voicePhase === "processing" ? "bg-purple-400" : "bg-emerald-400"} animate-ping`} />
+            <div
+              className="mt-3 text-[11px] font-mono rounded-xl px-3 py-1.5 flex items-center gap-2 animate-fade-in-up"
+              style={{
+                background: voicePhase === "active" ? "rgba(251,191,36,0.06)" : voicePhase === "processing" ? "rgba(168,85,247,0.06)" : "rgba(16,185,129,0.06)",
+                border: `1px solid ${ voicePhase === "active" ? "rgba(251,191,36,0.25)" : voicePhase === "processing" ? "rgba(168,85,247,0.25)" : "rgba(16,185,129,0.2)"}`,
+                color: voicePhase === "active" ? "rgba(251,191,36,0.9)" : voicePhase === "processing" ? "rgba(196,148,255,0.9)" : "rgba(52,211,153,0.85)",
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{
+                  background: voicePhase === "active" ? "#fbbf24" : voicePhase === "processing" ? "#a855f7" : "#10b981",
+                  animation: "drake-mic-pulse 1.5s ease-in-out infinite",
+                }}
+              />
               <span className="truncate">
-                {voicePhase === "active" ? "🎙️ Listening for your command…"
-                  : voicePhase === "processing" ? "⚡ Processing…"
-                  : listeningStatus || "Say \"Hey Drake\" to activate…"}
+                {voicePhase === "active"
+                  ? "Listening for your command…"
+                  : voicePhase === "processing"
+                  ? "Processing…"
+                  : listeningStatus || 'Say "Hey Drake" to activate…'}
               </span>
             </div>
           )}
         </div>
 
-        <div className="overflow-y-auto p-3 space-y-3" style={{ height: voiceEnabled ? "310px" : "340px" }}>
+        {/* Messages */}
+        <div
+          className="overflow-y-auto px-4 py-4 space-y-3"
+          style={{ height: voiceEnabled ? "300px" : "336px", scrollbarWidth: "none" }}
+        >
           {messages.map((msg) => (
             <MessageBubble key={msg.id} msg={msg} isNew={msg.id === newMsgId} />
           ))}
           {thinking && (
-            <div className="flex gap-2 items-end animate-fade-in-up">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.5)]">
+            <div className="flex gap-2.5 items-end animate-fade-in-up">
+              <div
+                className="w-7 h-7 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center flex-shrink-0"
+                style={{ boxShadow: "0 0 14px rgba(6,182,212,0.5)" }}
+              >
                 <Zap className="w-3.5 h-3.5 text-white" />
               </div>
-              <div className="bg-black/50 border border-cyan-500/20 rounded-2xl rounded-bl-sm backdrop-blur-sm"
-                style={{ boxShadow: "0 0 20px rgba(6,182,212,0.08)" }}>
+              <div
+                className="rounded-2xl rounded-bl-sm"
+                style={{
+                  background: "rgba(6,182,212,0.04)",
+                  border: "1px solid rgba(6,182,212,0.15)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
                 <TypingDots />
               </div>
             </div>
@@ -1347,13 +1463,32 @@ export function Drake() {
           <div ref={endRef} />
         </div>
 
+        {/* Quick suggestions */}
         {messages.length <= 2 && (
-          <div className="px-3 pb-2">
-            <div className="text-[10px] text-cyan-400/50 font-mono mb-1.5 tracking-wider">QUICK QUESTIONS</div>
+          <div className="px-4 pb-3">
+            <div className="text-[10px] text-cyan-400/40 font-mono mb-2 tracking-widest uppercase">Quick Ask</div>
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTED.map((s) => (
-                <button key={s} onClick={() => send(s)}
-                  className="text-[11px] font-mono px-2.5 py-1 rounded-full border border-cyan-500/30 text-cyan-400/80 hover:border-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-500/5 transition-all duration-200 cursor-pointer">
+                <button
+                  key={s}
+                  onClick={() => send(s)}
+                  className="text-[11px] font-mono px-3 py-1.5 rounded-xl border cursor-pointer transition-all duration-200"
+                  style={{
+                    background: "rgba(6,182,212,0.04)",
+                    borderColor: "rgba(6,182,212,0.2)",
+                    color: "rgba(103,232,249,0.75)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(6,182,212,0.5)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "rgba(103,232,249,1)";
+                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(6,182,212,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(6,182,212,0.2)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "rgba(103,232,249,0.75)";
+                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(6,182,212,0.04)";
+                  }}
+                >
                   {s}
                 </button>
               ))}
@@ -1361,22 +1496,51 @@ export function Drake() {
           </div>
         )}
 
-        <div className="px-3 pb-3 border-t border-cyan-500/10 pt-2">
-          <div className="flex gap-2 items-center bg-black/40 border border-cyan-500/20 rounded-xl px-3 py-2
-            focus-within:border-cyan-400/50 focus-within:shadow-[0_0_15px_rgba(6,182,212,0.1)] transition-all duration-200">
-            <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey}
+        {/* Input */}
+        <div
+          className="px-4 pb-4 pt-2"
+          style={{ borderTop: "1px solid rgba(6,182,212,0.1)" }}
+        >
+          <div
+            className="flex gap-2 items-center rounded-2xl px-4 py-2.5 transition-all duration-200"
+            style={{
+              background: "rgba(6,182,212,0.04)",
+              border: "1px solid rgba(6,182,212,0.18)",
+            }}
+            onFocus={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = "rgba(6,182,212,0.45)";
+              (e.currentTarget as HTMLElement).style.boxShadow = "0 0 20px rgba(6,182,212,0.1)";
+            }}
+            onBlur={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = "rgba(6,182,212,0.18)";
+              (e.currentTarget as HTMLElement).style.boxShadow = "none";
+            }}
+          >
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKey}
               placeholder="Ask me anything about Dhruva…"
-              className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none font-mono min-w-0"
-              maxLength={300} disabled={thinking} id="drake-input" />
-            <button onClick={() => send(input)} disabled={!input.trim() || thinking}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer
-                disabled:opacity-30 disabled:cursor-not-allowed bg-gradient-to-br from-cyan-500 to-purple-600
-                hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] active:scale-90">
+              className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none font-mono min-w-0"
+              maxLength={300}
+              disabled={thinking}
+              id="drake-input"
+            />
+            <button
+              onClick={() => send(input)}
+              disabled={!input.trim() || thinking}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed"
+              style={{
+                background: "linear-gradient(135deg, #06b6d4, #7c3aed)",
+                boxShadow: input.trim() ? "0 0 16px rgba(6,182,212,0.45)" : "none",
+              }}
+            >
               <Send className="w-3.5 h-3.5 text-white" />
             </button>
           </div>
-          <div className="text-[9px] text-center text-slate-600 mt-1.5 font-mono">
-            DRAKE · SLM · Say "Hey Drake" to activate voice
+          <div className="text-[9px] text-center text-slate-700 mt-2 font-mono tracking-widest">
+            DRAKE · SEMANTIC AI · VOICE-ENABLED
           </div>
         </div>
       </div>
@@ -1395,6 +1559,16 @@ export function Drake() {
           0%, 100% { transform: scale(1); opacity: 0.6; }
           50% { transform: scale(1.15); opacity: 1; }
         }
+        @keyframes drake-ring-pulse {
+          0% { box-shadow: 0 0 0 0 rgba(6,182,212,0.55); }
+          70% { box-shadow: 0 0 0 14px rgba(6,182,212,0); }
+          100% { box-shadow: 0 0 0 0 rgba(6,182,212,0); }
+        }
+        @keyframes drake-mic-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        div[style*="scrollbar-width: none"]::-webkit-scrollbar { display: none; }
       `}</style>
     </>
   );
