@@ -1073,7 +1073,6 @@ function DrakeOrb({ state, statusText, onDismiss }: { state: OrbState; statusTex
 // ─── Main Drake Component ─────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 const GREETING_TEXT = `Hey there! 👋 I'm **DRAKE** — Dhruva's AI assistant.\n\nI know everything about him: his skills, projects, research, achievements, and more.\n\nWhat would you like to know?`;
-const GREETING_SPEECH = `Hey there! I'm DRAKE, Dhruva's AI assistant. I know everything about him: his skills, projects, research, achievements, and more. What would you like to know?`;
 
 export function Drake() {
   const [open, setOpen] = useState(false);
@@ -1091,7 +1090,6 @@ export function Drake() {
   const [pulse, setPulse] = useState(false);
   const [unread, setUnread] = useState(0);
   const hasGreeted = useRef(false);
-  const hasAutoPlayed = useRef(false);
 
   // Voice state machine
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -1114,28 +1112,7 @@ export function Drake() {
   speechOutputRef.current = speechOutput;
   const activeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ─── Auto-play greeting on first user interaction with the page ─────────────
-  useEffect(() => {
-    const playGreeting = () => {
-      if (hasAutoPlayed.current) return;
-      hasAutoPlayed.current = true;
-      // Small delay so it doesn't fire on the very first load click
-      setTimeout(() => {
-        speakVoice(GREETING_SPEECH, speechOutputRef.current);
-      }, 800);
-      document.removeEventListener("click", playGreeting);
-      document.removeEventListener("scroll", playGreeting);
-      document.removeEventListener("keydown", playGreeting);
-    };
-    document.addEventListener("click", playGreeting, { once: true });
-    document.addEventListener("scroll", playGreeting, { once: true });
-    document.addEventListener("keydown", playGreeting, { once: true });
-    return () => {
-      document.removeEventListener("click", playGreeting);
-      document.removeEventListener("scroll", playGreeting);
-      document.removeEventListener("keydown", playGreeting);
-    };
-  }, []);
+
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1151,14 +1128,8 @@ export function Drake() {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 300);
       setUnread(0);
-      // Speak greeting on first panel open (if auto-play already fired, skip)
-      if (!hasGreeted.current) {
-        hasGreeted.current = true;
-        if (!hasAutoPlayed.current) {
-          hasAutoPlayed.current = true;
-          speakVoice(GREETING_SPEECH, speechOutputRef.current);
-        }
-      }
+      // Mark greeted (no auto-speech — Voice-1.mp3 in IntroSequence handles the intro)
+      hasGreeted.current = true;
     }
   }, [open]);
 
