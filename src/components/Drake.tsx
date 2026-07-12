@@ -874,15 +874,24 @@ function MessageBubble({ msg, isNew }: { msg: Message; isNew: boolean }) {
   useEffect(() => {
     if (msg.role === "user" || !isNew) return;
     idx.current = 0;
+    setDisplayed("");
+    setDone(false);
     const chars = msg.text.split("");
+    let cancelled = false;
+    let timerId: ReturnType<typeof setTimeout>;
     const tick = () => {
+      if (cancelled) return;
       if (idx.current >= chars.length) { setDone(true); return; }
       const chunkSize = chars[idx.current] === "\n" ? 1 : Math.floor(Math.random() * 3) + 1;
       setDisplayed((prev) => prev + chars.slice(idx.current, idx.current + chunkSize).join(""));
       idx.current += chunkSize;
-      setTimeout(tick, 12 + Math.random() * 10);
+      timerId = setTimeout(tick, 12 + Math.random() * 10);
     };
-    setTimeout(tick, 80);
+    timerId = setTimeout(tick, 80);
+    return () => {
+      cancelled = true;
+      clearTimeout(timerId);
+    };
   }, []);
 
   const isUser = msg.role === "user";
