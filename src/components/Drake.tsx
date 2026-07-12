@@ -214,20 +214,20 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["hi", "hello", "hey", "greet", "morning", "evening", "afternoon", "hola"],
     response: () =>
-      `Hey there! 👋 I'm **DRAKE** — Dhruva's AI assistant. I know everything about him: his skills, projects, research, education, and more. What would you like to know?`,
+      `Hello! 👋 I'm **DHRUVA AI**, your personal guide to Dhruva Mishra's portfolio. I can explain his AI and machine learning projects, full-stack applications, robotics work, research, hackathons, technical skills, and professional experience.\n\nFeel free to ask me anything or say **"Give me a quick tour"** for an overview.`,
   },
 
-  // ── Identity / About Drake ──
+  // ── Identity / About DHRUVA AI ──
   {
-    id: "about_drake",
+    id: "about_ai",
     phrases: [
       "who are you", "what are you", "your name", "introduce yourself",
-      "about you", "about drake", "what is drake", "tell me about yourself",
+      "about you", "about dhruva ai", "what is dhruva ai", "tell me about yourself",
       "who made you", "what can you do", "your purpose",
     ],
-    keywords: ["drake", "yourself", "purpose", "introduce", "assistant"],
+    keywords: ["yourself", "purpose", "introduce", "assistant", "dhruva ai"],
     response: () =>
-      `I'm **DRAKE** — Digital Responsive AI Knowledge Engine. I'm the personal AI assistant built into Dhruva Mishra's portfolio. I use a semantic language model to understand your questions and match them to my knowledge base.\n\nAsk me anything about Dhruva's skills, projects, education, research, achievements, or how to contact him!`,
+      `I'm **DHRUVA AI**, your personal guide through Dhruva Mishra's portfolio. I'm built to help visitors understand Dhruva's projects, skills, research, and professional experience.\n\nAsk me anything about his work and I'll provide accurate, up-to-date information from his portfolio!`,
   },
 
   // ── About Dhruva ──
@@ -241,7 +241,28 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["dhruv", "dhruva", "developer", "creator", "owner", "built", "who"],
     response: () =>
-      `**Dhruva Mishra** is a passionate Full-Stack Developer, ML Engineer, and Competitive Programmer currently pursuing B.Tech in Computer Science at **SRM IST, Chennai** (2024–2028).\n\nHe builds interactive web experiences, trains ML models, and researches immersive AR/VR depth completion. His motto: *"${KB.motto}"*\n\nKey stats: 2 hackathons won · 5+ robots built · 10+ web apps · AR/VR research in progress.`,
+      `According to Dhruva's portfolio, **Dhruva Mishra** is a Full-Stack Developer, ML Engineer, and Competitive Programmer currently pursuing B.Tech in Computer Science at **SRM IST, Chennai** (2024–2028).\n\nHe builds interactive web experiences, trains ML models, and researches immersive AR/VR depth completion. His motto: *"${KB.motto}"*\n\nKey highlights: 2 hackathons won · 5+ robots built · 10+ web apps · AR/VR research in progress.`,
+  },
+
+  // ── Tour Mode ──
+  {
+    id: "tour",
+    phrases: [
+      "tour", "show me around", "give me a tour", "quick tour",
+      "overview", "give me a quick tour", "walk me through",
+      "portfolio overview", "show everything", "full overview",
+    ],
+    keywords: ["tour", "overview", "around", "walk", "everything", "quick"],
+    response: () => {
+      const skillsList = [
+        ...KB.skills.languages,
+        ...KB.skills.frontend.slice(0, 2),
+        ...KB.skills.ml.slice(0, 2),
+      ].join(", ");
+      const projectNames = KB.projects.map((p) => p.name).join(", ");
+      const achievementsList = KB.achievements.slice(0, 3).join(", ");
+      return `Welcome to the tour! Here's an overview of Dhruva Mishra's portfolio:\n\n👤 **Introduction:** Dhruva is a Full-Stack Developer, ML Engineer, and Competitive Programmer at SRM IST, Chennai.\n\n💻 **Technical Skills:** ${skillsList}, and more across frontend, backend, ML, and databases.\n\n🚀 **Featured Projects:** ${projectNames}. Each showcases a different domain — from ML diagnostics to full-stack web apps to robotics.\n\n🔬 **Research:** Currently working on *${KB.research.title}* — reconstructing depth maps from sparse sensor data for AR/VR.\n\n🏆 **Hackathons & Achievements:** ${achievementsList}, and 10+ hackathon participations.\n\n📬 **Contact:** Reach Dhruva at ${KB.email} or connect on [LinkedIn](${KB.linkedin}) and [GitHub](${KB.github}).\n\nWant details on any specific section?`;
+    },
   },
 
   // ── Skills & Tech Stack ──
@@ -256,7 +277,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["skill", "tech", "stack", "language", "tool", "framework", "expert", "proficien", "technolog", "capabil"],
     response: () =>
-      `Here's Dhruva's tech arsenal:\n\n🔡 **Languages:** ${KB.skills.languages.join(", ")}\n⚛️ **Frontend:** ${KB.skills.frontend.join(", ")}\n🖥️ **Backend:** ${KB.skills.backend.join(", ")}\n🤖 **ML/AI:** ${KB.skills.ml.join(", ")}\n🗄️ **Databases:** ${KB.skills.databases.join(", ")}\n🔧 **Other:** ${KB.skills.other.join(", ")}`,
+      `According to Dhruva's portfolio, here's his technical skill set:\n\n🔡 **Languages:** ${KB.skills.languages.join(", ")}\n⚛️ **Frontend:** ${KB.skills.frontend.join(", ")}\n🖥️ **Backend:** ${KB.skills.backend.join(", ")}\n🤖 **ML/AI:** ${KB.skills.ml.join(", ")}\n🗄️ **Databases:** ${KB.skills.databases.join(", ")}\n🔧 **Other:** ${KB.skills.other.join(", ")}`,
   },
 
   // ── All Projects ──
@@ -267,6 +288,7 @@ const INTENTS: IntentDef[] = [
       "applications he made", "apps he built", "show me his projects",
       "list projects", "what projects", "his creations", "things he built",
       "work samples", "project list", "what has dhruva built",
+      "show projects",
     ],
     keywords: ["project", "built", "made", "work", "portfolio", "app", "application", "creation"],
     response: () => {
@@ -287,7 +309,7 @@ const INTENTS: IntentDef[] = [
     keywords: ["ev", "electric", "vehicle", "troubleshoot", "diagnos"],
     response: () => {
       const p = KB.projects[0];
-      return `**${p.name}** is a ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nIt uses predictive analytics to detect faults before they become critical issues. This project demonstrates Dhruva's ability to apply ML to real-world engineering problems.`;
+      return `According to Dhruva's work, **${p.name}** is a ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nIt uses predictive analytics to detect faults before they become critical issues. This project demonstrates Dhruva's ability to apply ML to real-world engineering problems.`;
     },
   },
 
@@ -301,7 +323,7 @@ const INTENTS: IntentDef[] = [
     keywords: ["crop", "farm", "agricultur", "soil", "recommend"],
     response: () => {
       const p = KB.projects[1];
-      return `**${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nThis system integrates weather data, soil analysis, and historical patterns to give farmers actionable insights. A great example of AI for social good!`;
+      return `According to Dhruva's work, **${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nThis system integrates weather data, soil analysis, and historical patterns to give farmers actionable insights — a great example of AI for social good.`;
     },
   },
 
@@ -315,7 +337,7 @@ const INTENTS: IntentDef[] = [
     keywords: ["maze", "robot", "robotic", "arduino", "hardware", "autonomous"],
     response: () => {
       const p = KB.projects[2];
-      return `**${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nDhruva has built 5+ robots, combining hardware control with software intelligence! He loves the intersection of physical computing and algorithms.`;
+      return `According to Dhruva's work, **${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nDhruva has built 5+ robots, combining hardware control with software intelligence. He works at the intersection of physical computing and algorithms.`;
     },
   },
 
@@ -329,7 +351,7 @@ const INTENTS: IntentDef[] = [
     keywords: ["ecommerce", "commerce", "shop", "store", "payment", "stripe", "cart"],
     response: () => {
       const p = KB.projects[3];
-      return `**${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nIncludes full authentication, product catalog, cart management, and Stripe-powered checkout. A complete production-ready solution!`;
+      return `According to Dhruva's work, **${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nIncludes full authentication, product catalog, cart management, and Stripe-powered checkout — a complete production-ready solution.`;
     },
   },
 
@@ -343,7 +365,7 @@ const INTENTS: IntentDef[] = [
     keywords: ["task", "todo", "productiv", "tracker", "collaborat"],
     response: () => {
       const p = KB.projects[4];
-      return `**${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nFeatures real-time synchronization, analytics dashboards, and a clean UI for team collaboration.`;
+      return `According to Dhruva's work, **${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nFeatures real-time synchronization, analytics dashboards, and a clean UI for team collaboration.`;
     },
   },
 
@@ -357,7 +379,24 @@ const INTENTS: IntentDef[] = [
     keywords: ["weather", "forecast", "climate", "dashboard"],
     response: () => {
       const p = KB.projects[5];
-      return `**${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nIncludes interactive maps, geolocation-based alerts, and beautiful data visualizations.`;
+      return `According to Dhruva's work, **${p.name}**: ${p.desc}\n\n**Stack:** ${p.stack.join(", ")}\n\nIncludes interactive maps, geolocation-based alerts, and beautiful data visualizations.`;
+    },
+  },
+
+  // ── ML Projects ──
+  {
+    id: "ml_projects",
+    phrases: [
+      "which one uses machine learning", "ml projects", "machine learning projects",
+      "ai projects", "projects with ml", "projects using ai",
+    ],
+    keywords: ["machin", "learn", "ml", "ai", "artific"],
+    response: () => {
+      const mlProjects = KB.projects.filter((p) => p.category === "ML");
+      const list = mlProjects
+        .map((p) => `• **${p.name}** — ${p.desc}\n  Stack: ${p.stack.join(", ")}`)
+        .join("\n");
+      return `Dhruva's machine learning projects include:\n\n${list}\n\nHe also has active research in AR/VR depth completion using ML.`;
     },
   },
 
@@ -373,7 +412,7 @@ const INTENTS: IntentDef[] = [
     keywords: ["research", "ar", "vr", "depth", "immers", "paper", "publicat", "vision", "academ"],
     response: () => {
       const r = KB.research;
-      return `**Research: ${r.title}** *(${r.status})*\n\n${r.overview}\n\n**Key objectives:**\n${r.objectives.map((o) => `• ${o}`).join("\n")}\n\nOpen to collaboration with researchers and institutions in AR/VR and computer vision!`;
+      return `According to Dhruva's research portfolio:\n\n**${r.title}** *(${r.status})*\n\n${r.overview}\n\n**Key objectives:**\n${r.objectives.map((o) => `• ${o}`).join("\n")}\n\nDhruva is open to collaboration with researchers and institutions in AR/VR and computer vision.`;
     },
   },
 
@@ -390,7 +429,7 @@ const INTENTS: IntentDef[] = [
       const list = KB.education
         .map((e) => `• **${e.school}** — ${e.degree} *(${e.year})*`)
         .join("\n");
-      return `**Dhruva's Educational Journey:**\n\n${list}`;
+      return `Dhruva's educational background:\n\n${list}`;
     },
   },
 
@@ -405,7 +444,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["contact", "email", "phone", "reach", "hire", "touch", "collaborat", "connect", "message"],
     response: () =>
-      `Want to reach Dhruva? Here you go:\n\n📧 **Email:** ${KB.email}\n📞 **Phone:** ${KB.phone}\n💼 **LinkedIn:** [linkedin.com/in/1hpdhruv](${KB.linkedin})\n🐙 **GitHub:** [github.com/1HPdhruv](${KB.github})\n📍 **Location:** ${KB.location}\n\nHe's open to freelance projects, collaborations, and full-time opportunities!`,
+      `Here's how to reach Dhruva:\n\n📧 **Email:** ${KB.email}\n📞 **Phone:** ${KB.phone}\n💼 **LinkedIn:** [linkedin.com/in/1hpdhruv](${KB.linkedin})\n🐙 **GitHub:** [github.com/1HPdhruv](${KB.github})\n📍 **Location:** ${KB.location}\n\nHe's open to freelance projects, collaborations, and full-time opportunities.`,
   },
 
   // ── GitHub ──
@@ -413,11 +452,11 @@ const INTENTS: IntentDef[] = [
     id: "github",
     phrases: [
       "github", "github profile", "source code", "repositories",
-      "open source", "code repositories", "his github",
+      "open source", "code repositories", "his github", "open github",
     ],
     keywords: ["github", "repositor", "source", "code", "opensource"],
     response: () =>
-      `You can find Dhruva's code at **GitHub:** [github.com/1HPdhruv](${KB.github})\n\nHe regularly commits to open-source projects and personal experiments!`,
+      `Dhruva's code is available on **GitHub:** [github.com/1HPdhruv](${KB.github})\n\nHe regularly commits to open-source projects and personal experiments.`,
   },
 
   // ── LinkedIn ──
@@ -443,7 +482,7 @@ const INTENTS: IntentDef[] = [
     keywords: ["servic", "offer", "freelanc", "hire", "availab", "consult", "contract"],
     response: () => {
       const list = KB.services.map((s) => `• ${s}`).join("\n");
-      return `Dhruva offers the following services:\n\n${list}\n\nInterested in working together? Drop him a message at ${KB.email} or visit the Contact section!`;
+      return `Dhruva offers the following services:\n\n${list}\n\nInterested in working together? Reach out at ${KB.email} or visit the Contact section.`;
     },
   },
 
@@ -458,7 +497,7 @@ const INTENTS: IntentDef[] = [
     keywords: ["achiev", "award", "win", "hackathon", "prize", "accomplish", "compet", "ideathon", "honor"],
     response: () => {
       const list = KB.achievements.map((a) => `🏆 ${a}`).join("\n");
-      return `Dhruva's achievements:\n\n${list}\n\nHe's consistently placed in competitive events and loves the challenge!`;
+      return `Dhruva's achievements:\n\n${list}\n\nHe consistently places in competitive events and thrives on the challenge.`;
     },
   },
 
@@ -471,7 +510,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["java", "spring", "backend", "api", "rest", "microservic", "server"],
     response: () =>
-      `Java is Dhruva's primary backend language. He builds **RESTful APIs**, microservices with **Spring Boot**, and connects them to databases like **MongoDB** and **SQL**. He's also proficient in **Node.js + Express** for JavaScript-based backends.`,
+      `According to Dhruva's skill set, Java is his primary backend language. He builds **RESTful APIs** and microservices with **Spring Boot**, connecting them to databases like **MongoDB** and **SQL**. He's also proficient in **Node.js + Express** for JavaScript-based backends.`,
   },
 
   // ── Python / ML ──
@@ -484,7 +523,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["python", "tensorflow", "scikit", "ml", "machin", "learn", "ai", "artific", "deep", "neural", "data"],
     response: () =>
-      `Dhruva is well-versed in Python for ML/AI:\n\n• **TensorFlow & Scikit-learn** for model training\n• **Flask** for deploying ML models as APIs\n• **Data Analysis** with Pandas and NumPy\n• Active **research** in depth completion for AR/VR\n\nHis EV Troubleshooter and Crop Recommendation projects are great examples!`,
+      `According to Dhruva's work, he's well-versed in Python for ML/AI:\n\n• **TensorFlow & Scikit-learn** for model training\n• **Flask** for deploying ML models as APIs\n• **Data Analysis** with Pandas and NumPy\n• Active **research** in depth completion for AR/VR\n\nHis EV Troubleshooter and Crop Recommendation projects are excellent examples of applied ML.`,
   },
 
   // ── React / Frontend ──
@@ -497,7 +536,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["react", "frontend", "front", "tailwind", "typescript", "vite", "ui", "design", "css", "html"],
     response: () =>
-      `On the frontend, Dhruva uses:\n\n• **React + TypeScript** for component-based UIs\n• **Tailwind CSS** for utility-first styling\n• **Vite** as the build tool\n• Modern design patterns: glassmorphism, dark mode, animations\n\nThis very portfolio is built with React + Vite + Tailwind! 😄`,
+      `On the frontend, Dhruva works with:\n\n• **React + TypeScript** for component-based UIs\n• **Tailwind CSS** for utility-first styling\n• **Vite** as the build tool\n• Modern design patterns: glassmorphism, dark mode, animations\n\nThis very portfolio is built with React + Vite + Tailwind!`,
   },
 
   // ── DSA / CP ──
@@ -510,7 +549,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["dsa", "competit", "algorithm", "leetcode", "codeforce", "atcoder", "problem", "structur"],
     response: () =>
-      `Dhruva is a competitive programmer with a strong DSA foundation:\n\n• Practices on **LeetCode**, **Codeforces**, and **AtCoder**\n• Expertise in graph algorithms, dynamic programming, and greedy approaches\n• His competitive mindset directly influences how he approaches complex engineering problems`,
+      `According to Dhruva's profile, he's a competitive programmer with a strong DSA foundation:\n\n• Practices on **LeetCode**, **Codeforces**, and **AtCoder**\n• Expertise in graph algorithms, dynamic programming, and greedy approaches\n• His competitive mindset directly influences how he approaches complex engineering problems.`,
   },
 
   // ── Motto / Philosophy ──
@@ -535,7 +574,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["hobb", "interest", "passion", "personal", "fun", "free", "spare", "outsid"],
     response: () =>
-      `Beyond code, Dhruva is passionate about:\n\n🤖 Building robots from scratch\n🧩 Solving algorithmic puzzles\n🔬 Pushing the boundaries of AR/VR\n🌍 Contributing to open-source\n📚 Reading about AI advancements\n\nHe truly lives the *Build. Break. Learn. Repeat.* mantra!`,
+      `Beyond code, Dhruva is passionate about:\n\n🤖 Building robots from scratch\n🧩 Solving algorithmic puzzles\n🔬 Pushing the boundaries of AR/VR\n🌍 Contributing to open-source\n📚 Reading about AI advancements\n\nHe truly lives the *Build. Break. Learn. Repeat.* mantra.`,
   },
 
   // ── Help ──
@@ -547,7 +586,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["help", "command", "option", "capabil", "featur", "guid"],
     response: () =>
-      `I can answer questions about:\n\n• 👤 **Who is Dhruva?**\n• 💻 **His skills & tech stack**\n• 🚀 **His projects** (EV, Crop AI, Robot, E-Commerce, etc.)\n• 🔬 **His AR/VR research**\n• 🎓 **His education**\n• 🏆 **His achievements**\n• 📬 **How to contact him**\n• 🛠️ **Services he offers**\n• 🐙 **GitHub & LinkedIn**\n\nJust ask naturally — my semantic engine understands you!`,
+      `I can help you with:\n\n• 👤 **Who is Dhruva?**\n• 💻 **His skills & tech stack**\n• 🚀 **His projects** (EV, Crop AI, Robot, E-Commerce, etc.)\n• 🔬 **His AR/VR research**\n• 🎓 **His education**\n• 🏆 **His achievements**\n• 📬 **How to contact him**\n• 🛠️ **Services he offers**\n• 🐙 **GitHub & LinkedIn**\n\nJust ask naturally — I understand conversational queries!`,
   },
 
   // ── Resume ──
@@ -559,7 +598,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["resum", "cv", "download", "curriculum"],
     response: () =>
-      `You can download Dhruva's resume directly from the hero section of this portfolio (the "Download Resume" button), or ask him to send it directly at **${KB.email}**!`,
+      `You can download Dhruva's resume from the hero section of this portfolio (the "Download Resume" button), or request it directly at **${KB.email}**.`,
   },
 
   // ── Location ──
@@ -583,7 +622,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["thank", "bye", "goodbye", "appreciat", "great", "awesome"],
     response: () =>
-      `You're welcome! 😊 If you have more questions about Dhruva, I'm always here. Feel free to ask anytime!\n\n*— DRAKE, signing off for now.*`,
+      `You're welcome! If you have more questions about Dhruva's work, I'm always here. Feel free to reach out anytime.\n\n*— DHRUVA AI*`,
   },
 
   // ── Age / Year ──
@@ -607,7 +646,7 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["experienc", "internship", "job", "career", "employ", "profession"],
     response: () =>
-      `Dhruva is currently a B.Tech student focused on building real-world projects. His experience includes:\n\n• **${KB.projects.length} major projects** spanning ML, Web Dev, and Robotics\n• **2x Hackathon Winner** with 10+ participations\n• Active **AR/VR research** (${KB.research.status})\n• **5+ robots built** from scratch\n\nHe's actively seeking internship and collaboration opportunities! Contact: ${KB.email}`,
+      `According to Dhruva's portfolio, his experience includes:\n\n• **${KB.projects.length} major projects** spanning ML, Web Dev, and Robotics\n• **2x Hackathon Winner** with 10+ participations\n• Active **AR/VR research** (${KB.research.status})\n• **5+ robots built** from scratch\n\nHe's actively seeking internship and collaboration opportunities. Contact: ${KB.email}`,
   },
 
   // ── Database ──
@@ -619,7 +658,19 @@ const INTENTS: IntentDef[] = [
     ],
     keywords: ["databas", "mongodb", "sql", "firebase", "nosql", "relat", "storage"],
     response: () =>
-      `Dhruva works with multiple database technologies:\n\n• **MongoDB** — NoSQL document database for flexible schemas\n• **SQL** — Relational databases for structured data\n• **Firebase** — Real-time database & cloud backend\n\nHe integrates these with his backend services built in Spring Boot and Node.js.`,
+      `According to Dhruva's skill set, he works with multiple database technologies:\n\n• **MongoDB** — NoSQL document database for flexible schemas\n• **SQL** — Relational databases for structured data\n• **Firebase** — Real-time database & cloud backend\n\nHe integrates these with his backend services built in Spring Boot and Node.js.`,
+  },
+
+  // ── Navigation: Show Projects ──
+  {
+    id: "nav_projects",
+    phrases: [
+      "show projects section", "navigate to projects", "go to projects",
+      "scroll to projects", "take me to projects",
+    ],
+    keywords: ["navigate", "scroll", "section", "go"],
+    response: () =>
+      `You can find Dhruva's projects in the **Projects section** of this portfolio. Scroll down or use the navigation menu to jump there directly.\n\nHere's a quick look:\n${KB.projects.map((p) => `• **${p.name}** *(${p.category})*`).join("\n")}`,
   },
 ];
 
@@ -632,7 +683,7 @@ const INTENT_VECTORS: { intent: IntentDef; vectors: Map<string, number>[]; keywo
   }));
 
 // ─── Main SLM Query Function ─────────────────────────────────────────────────
-function getDrakeResponse(input: string): string {
+function getDhruvaResponse(input: string): string {
   const q = input.toLowerCase().trim();
   if (!q) return INTENTS.find((i) => i.id === "help")!.response();
 
@@ -691,7 +742,7 @@ function getDrakeResponse(input: string): string {
 
   // Threshold: if best score is too low, return fallback
   if (bestScore < 0.12 || !bestIntent) {
-    return `I'm not sure I understood that perfectly, but here's what I can help with:\n\n• 👤 **About Dhruva** — "Who is Dhruva?"\n• 💻 **Skills** — "What are his skills?"\n• 🚀 **Projects** — "Tell me about his projects"\n• 🔬 **Research** — "What's his research about?"\n• 🎓 **Education** — "Where did he study?"\n• 🏆 **Achievements** — "What has he won?"\n• 📬 **Contact** — "How to reach him?"\n\nTry rephrasing or ask one of these!`;
+    return `That question isn't available in Dhruva's portfolio, but here's what I can help with:\n\n• 👤 **About Dhruva** — "Who is Dhruva?"\n• 💻 **Skills** — "What are his skills?"\n• 🚀 **Projects** — "Tell me about his projects"\n• 🔬 **Research** — "What's his research about?"\n• 🎓 **Education** — "Where did he study?"\n• 🏆 **Achievements** — "What has he won?"\n• 📬 **Contact** — "How to reach him?"\n\nTry rephrasing or ask one of these!`;
   }
 
   return bestIntent.response();
@@ -719,7 +770,7 @@ function speakVoice(text: string, enabled: boolean) {
 // ═══════════════════════════════════════════════════════════════════════════════
 type Message = {
   id: number;
-  role: "user" | "drake";
+  role: "user" | "assistant";
   text: string;
   timestamp: Date;
 };
@@ -730,7 +781,7 @@ const SUGGESTED = [
   "Tell me about his projects",
   "How to contact him?",
   "What's his research about?",
-  "His achievements?",
+  "Give me a quick tour",
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -780,7 +831,7 @@ function TypingDots() {
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 function MessageBubble({ msg, isNew }: { msg: Message; isNew: boolean }) {
-  const [displayed, setDisplayed] = useState(isNew && msg.role === "drake" ? "" : msg.text);
+  const [displayed, setDisplayed] = useState(isNew && msg.role === "assistant" ? "" : msg.text);
   const [done, setDone] = useState(!isNew || msg.role === "user");
   const idx = useRef(0);
 
@@ -840,7 +891,7 @@ function MessageBubble({ msg, isNew }: { msg: Message; isNew: boolean }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 type OrbState = "idle" | "listening" | "thinking" | "speaking";
 
-function DrakeOrb({ state, statusText, onDismiss }: { state: OrbState; statusText: string; onDismiss: () => void }) {
+function DhruvaOrb({ state, statusText, onDismiss }: { state: OrbState; statusText: string; onDismiss: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
 
@@ -926,7 +977,7 @@ function DrakeOrb({ state, statusText, onDismiss }: { state: OrbState; statusTex
   }, [state]);
 
   const stateLabels: Record<OrbState, string> = {
-    idle: "Say \"Hey Drake\" to activate",
+    idle: "Say \"Hey Dhruva\" to activate",
     listening: "Listening…",
     thinking: "Processing…",
     speaking: "Speaking…",
@@ -969,7 +1020,7 @@ function DrakeOrb({ state, statusText, onDismiss }: { state: OrbState; statusTex
       <div className="relative z-10 mt-6 text-center">
         <div className="font-mono font-bold text-white text-lg tracking-widest mb-2"
           style={{ textShadow: "0 0 20px rgba(6,182,212,0.6)" }}>
-          DRAKE
+          DHRUVA AI
         </div>
         <div className="font-mono text-sm text-cyan-300/90 tracking-wide">
           {statusText || stateLabels[state]}
@@ -983,16 +1034,16 @@ function DrakeOrb({ state, statusText, onDismiss }: { state: OrbState; statusTex
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ─── Main Drake Component ─────────────────────────────────────────────────────
+// ─── Main DHRUVA AI Component ─────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-const GREETING_TEXT = `Hello! I'm **DRAKE** — Dhruva's AI assistant. 🚀\n\nI know everything about Dhruva: his skills, projects, research, achievements, and more.\n\nWhat would you like to know?`;
+const GREETING_TEXT = `Hello! I'm **DHRUVA AI**, your personal guide to Dhruva Mishra's portfolio. 🚀\n\nI can explain his AI and machine learning projects, full-stack applications, robotics work, research, hackathons, technical skills, and professional experience.\n\nFeel free to ask me anything or say **"Give me a quick tour"** for an overview.`;
 
 export function Drake() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 0,
-      role: "drake",
+      role: "assistant",
       text: GREETING_TEXT,
       timestamp: new Date(),
     },
@@ -1042,7 +1093,7 @@ export function Drake() {
       // Speak greeting only the first time the panel opens
       if (!hasGreeted.current) {
         hasGreeted.current = true;
-        const greetingClean = `Hello! I'm DRAKE, Dhruva's AI assistant. I know everything about Dhruva: his skills, projects, research, achievements, and more. What would you like to know?`;
+        const greetingClean = `Hello! I'm DHRUVA AI, your personal guide to Dhruva Mishra's portfolio. I can explain his AI and machine learning projects, full-stack applications, robotics work, research, hackathons, technical skills, and professional experience. Feel free to ask me anything or say give me a quick tour for an overview.`;
         speakVoice(greetingClean, speechOutputRef.current);
       }
     }
@@ -1059,11 +1110,11 @@ export function Drake() {
 
     const delay = 600 + Math.random() * 600;
     setTimeout(() => {
-      const drakeId = msgIdCounter.current++;
-      const reply = getDrakeResponse(text);
-      const drakeMsg: Message = { id: drakeId, role: "drake", text: reply, timestamp: new Date() };
-      setMessages((prev) => [...prev, drakeMsg]);
-      setNewMsgId(drakeId);
+      const assistantId = msgIdCounter.current++;
+      const reply = getDhruvaResponse(text);
+      const assistantMsg: Message = { id: assistantId, role: "assistant", text: reply, timestamp: new Date() };
+      setMessages((prev) => [...prev, assistantMsg]);
+      setNewMsgId(assistantId);
       setThinking(false);
       if (!open) setUnread((u) => u + 1);
 
@@ -1095,7 +1146,7 @@ export function Drake() {
 
     recognition.onstart = () => {
       if (voicePhaseRef.current === "passive") {
-        setListeningStatus("Say \"Hey Drake\" to activate…");
+        setListeningStatus("Say \"Hey Dhruva\" to activate…");
       }
     };
 
@@ -1122,7 +1173,7 @@ export function Drake() {
 
       // ── PASSIVE: only wake words ──
       if (voicePhaseRef.current === "passive") {
-        const wakeWords = ["hey drake", "ok drake", "hello drake", "drake"];
+        const wakeWords = ["hey dhruva", "ok dhruva", "hello dhruva", "dhruva"];
         const hasWake = wakeWords.some((w) => lower.includes(w));
         if (!hasWake) return;
 
@@ -1147,7 +1198,7 @@ export function Drake() {
           setShowOrb(true);
           setOrbState("listening");
           setOrbStatusText("");
-          setListeningStatus("Drake activated — listening for command…");
+          setListeningStatus("DHRUVA AI activated — listening for command…");
           speakVoice("Yes?", speechOutputRef.current);
 
           if (activeTimeoutRef.current) clearTimeout(activeTimeoutRef.current);
@@ -1156,7 +1207,7 @@ export function Drake() {
               setVoicePhase("passive");
               setOrbState("idle");
               setTimeout(() => setShowOrb(false), 800);
-              setListeningStatus("Say \"Hey Drake\" to activate…");
+              setListeningStatus("Say \"Hey Dhruva\" to activate…");
             }
           }, 8000);
         }
@@ -1168,7 +1219,7 @@ export function Drake() {
         if (activeTimeoutRef.current) clearTimeout(activeTimeoutRef.current);
 
         let command = lower;
-        const wakeWords = ["hey drake", "ok drake", "hello drake", "drake"];
+        const wakeWords = ["hey dhruva", "ok dhruva", "hello dhruva", "dhruva"];
         for (const w of wakeWords) {
           if (command.includes(w)) {
             command = command.substring(command.indexOf(w) + w.length).trim();
@@ -1231,20 +1282,20 @@ export function Drake() {
   };
 
   const reset = () => {
-    setMessages([{ id: 0, role: "drake", text: `Hello again! I'm **DRAKE**. Ask me anything about Dhruva! 🚀`, timestamp: new Date() }]);
+    setMessages([{ id: 0, role: "assistant", text: `Hello! I'm **DHRUVA AI**. Ask me anything about Dhruva's portfolio! 🚀`, timestamp: new Date() }]);
     setNewMsgId(0); setUnread(0); msgIdCounter.current = 1;
   };
 
   return (
     <>
-      {showOrb && <DrakeOrb state={orbState} statusText={orbStatusText} onDismiss={dismissOrb} />}
+      {showOrb && <DhruvaOrb state={orbState} statusText={orbStatusText} onDismiss={dismissOrb} />}
 
       {/* ── Premium AI Button ── */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
         <button
-          id="drake-toggle-btn"
+          id="dhruva-ai-toggle-btn"
           onClick={() => setOpen((o) => !o)}
-          aria-label="Open DRAKE AI Assistant"
+          aria-label="Open DHRUVA AI Assistant"
           className="relative group cursor-pointer select-none"
           style={{ outline: "none" }}
         >
@@ -1254,7 +1305,7 @@ export function Drake() {
               className="absolute inset-0 rounded-full"
               style={{
                 boxShadow: "0 0 0 0 rgba(6,182,212,0.5)",
-                animation: pulse ? "drake-ring-pulse 2.4s ease-out infinite" : "none",
+                animation: pulse ? "dhruva-ring-pulse 2.4s ease-out infinite" : "none",
                 borderRadius: "9999px",
               }}
             />
@@ -1290,7 +1341,7 @@ export function Drake() {
             {/* Labels */}
             <div className="flex flex-col items-start leading-none">
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-white font-mono tracking-[0.2em] text-sm">DRAKE</span>
+                <span className="font-bold text-white font-mono tracking-[0.15em] text-sm">DHRUVA</span>
                 <span className="text-[9px] font-mono text-cyan-400/70 border border-cyan-500/30 rounded px-1 py-0.5 leading-none">AI</span>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -1299,10 +1350,10 @@ export function Drake() {
                   className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                     voiceEnabled ? "bg-emerald-400" : "bg-slate-500"
                   }`}
-                  style={voiceEnabled ? { animation: "drake-mic-pulse 1.8s ease-in-out infinite" } : {}}
+                  style={voiceEnabled ? { animation: "dhruva-mic-pulse 1.8s ease-in-out infinite" } : {}}
                 />
                 <span className="text-[10px] font-mono text-cyan-400/60 tracking-wide">
-                  {open ? "tap to close" : voiceEnabled ? 'say "hey drake"' : "ask anything"}
+                  {open ? "tap to close" : voiceEnabled ? 'say "hey dhruva"' : "ask anything"}
                 </span>
               </div>
             </div>
@@ -1360,10 +1411,10 @@ export function Drake() {
             {/* Name block */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-white font-mono tracking-[0.15em] text-sm">DRAKE</span>
-                <span className="text-[9px] font-mono text-cyan-400/60 border border-cyan-500/25 rounded-md px-1.5 py-0.5 leading-none">SLM</span>
+                <span className="font-bold text-white font-mono tracking-[0.15em] text-sm">DHRUVA</span>
+                <span className="text-[9px] font-mono text-cyan-400/60 border border-cyan-500/25 rounded-md px-1.5 py-0.5 leading-none">AI</span>
               </div>
-              <div className="text-[11px] text-cyan-300/50 font-mono mt-0.5 truncate">Semantic AI · Voice-enabled</div>
+              <div className="text-[11px] text-cyan-300/50 font-mono mt-0.5 truncate">Portfolio Guide · Voice-enabled</div>
             </div>
 
             {/* Controls */}
@@ -1418,7 +1469,7 @@ export function Drake() {
                 className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                 style={{
                   background: voicePhase === "active" ? "#fbbf24" : voicePhase === "processing" ? "#a855f7" : "#10b981",
-                  animation: "drake-mic-pulse 1.5s ease-in-out infinite",
+                  animation: "dhruva-mic-pulse 1.5s ease-in-out infinite",
                 }}
               />
               <span className="truncate">
@@ -1426,7 +1477,7 @@ export function Drake() {
                   ? "Listening for your command…"
                   : voicePhase === "processing"
                   ? "Processing…"
-                  : listeningStatus || 'Say "Hey Drake" to activate…'}
+                  : listeningStatus || 'Say "Hey Dhruva" to activate…'}
               </span>
             </div>
           )}
@@ -1525,7 +1576,7 @@ export function Drake() {
               className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none font-mono min-w-0"
               maxLength={300}
               disabled={thinking}
-              id="drake-input"
+              id="dhruva-ai-input"
             />
             <button
               onClick={() => send(input)}
@@ -1540,7 +1591,7 @@ export function Drake() {
             </button>
           </div>
           <div className="text-[9px] text-center text-slate-700 mt-2 font-mono tracking-widest">
-            DRAKE · SEMANTIC AI · VOICE-ENABLED
+            DHRUVA AI · PORTFOLIO GUIDE · VOICE-ENABLED
           </div>
         </div>
       </div>
@@ -1559,12 +1610,12 @@ export function Drake() {
           0%, 100% { transform: scale(1); opacity: 0.6; }
           50% { transform: scale(1.15); opacity: 1; }
         }
-        @keyframes drake-ring-pulse {
+        @keyframes dhruva-ring-pulse {
           0% { box-shadow: 0 0 0 0 rgba(6,182,212,0.55); }
           70% { box-shadow: 0 0 0 14px rgba(6,182,212,0); }
           100% { box-shadow: 0 0 0 0 rgba(6,182,212,0); }
         }
-        @keyframes drake-mic-pulse {
+        @keyframes dhruva-mic-pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(0.8); }
         }
