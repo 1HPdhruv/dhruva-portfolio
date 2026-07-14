@@ -6,13 +6,13 @@ import { Portfolio } from "@/components/Portfolio";
 import { Research } from "@/components/Research";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
-import { IntroSequence } from "@/components/IntroSequence";
+
 import { Drake } from "@/components/Drake";
 
 const Index = () => {
   return (
     <>
-      <IntroSequence />
+
       <div className="min-h-screen opacity-100 pointer-events-auto">
         <Navigation />
         <main>
